@@ -1,0 +1,10 @@
+.iws
+.idea/
+.vscode/
+
+# for goreleaser
+testdata/
+dist/
+vendor/
+test.xml
+lint.xml

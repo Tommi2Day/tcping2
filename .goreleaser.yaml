@@ -1,0 +1,91 @@
+---
+project_name: tcping2
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm
+    targets:
+      - linux_amd64
+      - linux_arm
+      - darwin_amd64
+      - windows_amd64
+    ldflags:
+      - -s -w
+      - -X {{ .ProjectName }}/cmd.Version={{.Version}}
+      - -X {{ .ProjectName }}/cmd.Commit={{.ShortCommit}}
+      - -X {{ .ProjectName }}/cmd.Date={{time "2006-01-02"}}
+      - -X {{ .ProjectName }}/cmd.Name={{.ProjectName}}
+
+changelog:
+  use: git
+  filters:
+    exclude:
+      - '^Merge branch'
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: 'Bug fixes'
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: 'Refactoring'
+      regexp: "^.*refactor[(\\w)]*:+.*$"
+      order: 2
+    - title: Others
+      order: 999
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-beta"
+
+archives:
+  - id: archive
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    strip_parent_binary_folder: true
+    files:
+      - "*.md"
+
+nfpms:
+  - id: packages
+    # dont use {{ .ProjectName }} here :(
+    package_name: tcping2
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    # builds:
+    maintainer: "Tommi2Day <tommi2day@github.com>"
+    description: |-
+      Tcping2 is a ip probe command line tool, supporting ICMP and TCP protocols 
+      It may also run an httptrace and ip traces (using system mtr installation).
+    formats:
+      - rpm
+      - deb
+    # dependencies:
+    provides:
+      # dont use {{ .ProjectName }} here :(
+      - tcping2
+    contents:
+      - src: "LICENSE"
+        dst: /usr/share/doc/{{ .ProjectName }}/
+
+
+
+release:
+  github:
+    owner: tommi2day
+    name: tcping2
+  replace_existing_draft: true
+  draft: true
+  header: |
+    ## TCPING2 Release {{ .Tag }} ({{ time "2006-01-02" }})
+  target_commitish: '{{ .Commit }}'
