@@ -2,19 +2,20 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/tommi2day/tcping2)](https://goreportcard.com/report/github.com/tommi2day/tcping2)
 ![CI](https://github.com/tommi2day/tcping2/actions/workflows/main.yml/badge.svg)
-<!--[![codecov](https://codecov.io/gh/Tommi2Day/tcping2/branch/main/graph/badge.svg?token=C1IP9AMBUM)](https://codecov.io/gh/Tommi2Day/tcping2) -->
+[![codecov](https://codecov.io/gh/Tommi2Day/tcping2/branch/main/graph/badge.svg?token=C1IP9AMBUM)](https://codecov.io/gh/Tommi2Day/tcping2)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/tommi2day/tcping2)
 
-this is an enhanced version [i3h/tcping](https://github.com/i3h/tcping)
+Tcping2 is a ip probe command line tool, supporting ICMP, TCP and HTTP protocols
 
-Tcping2 is a ip probe command line tool, supporting ICMP and TCP protocols 
-It may also run an httptrace and ip traces (using system mtr installation).
-You can also use it to query IP network information from [https://ifconfig.is](https://ifconfig.is).
+this is a rewritten version of [i3h/tcping](https://github.com/i3h/tcping) 
 
 # Features
 
-- Support ICMP/TCP/HTTP protocols
-- Query basic IP information
+- Support ICMP/TCP protocols
+- Support IPv4/IPv6 addresses or IPv4 Only
+- HTTPTrace
+- Traceroute using mtr (based on system installed mtr, not avaiable on Windows)
+- Query basic IP information from [https://ifconfig.is](https://ifconfig.is).
 
 # Installation
 
@@ -22,7 +23,7 @@ Download latest release binaries from [Github](https://github.com/tommi2day/tcpi
 or use go install
 
 ```
-go install -u gitlab.intern.tdressler.net/goproj/tcping2@latest
+go install -u github.com/tommi2day/tcping2@latest
 ```
 or Build on your own
 
