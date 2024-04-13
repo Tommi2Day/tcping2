@@ -114,11 +114,13 @@ func runMTR(_ *cobra.Command, args []string) error {
 		}
 		mtr.Log()
 	}
+	log.Debugf("MTR done")
 	return nil
 }
 
 // Log logs the mtr results
 func (mtr *MTR) Log() {
+	log.Debugf("entr log MTR to %s", mtr.Report.Desc.Dst)
 	for _, h := range mtr.Report.Hops {
 		fmt.Printf("%s %3d %-60s Loss: %6.2f%% Avg:%6.2fms\n", cyan("%-4s", "Hop"), h.Count, h.Host, h.Loss, h.Avg)
 	}
@@ -127,29 +129,39 @@ func (mtr *MTR) Log() {
 // Run runs system mtr command and returns the IP addresses of the hops
 func (mtr *MTR) Run(ip string, port string, t bool) (err error) {
 	var cmd *exec.Cmd
-	txt := ip
-	if t {
-		cmd = exec.Command("mtr", "-j", ip, "-T", "-P", port)
-		txt = ip + ":" + port
-	} else {
-		cmd = exec.Command("mtr", "-j", ip)
-	}
-	log.Debugf("command %s", strings.Join(cmd.Args, " "))
-	fmt.Printf("Waiting for MTR results to %s ...\n", txt)
+	log.Debugf("use mtr as %s", mtrBin)
+	cmd = exec.Command(mtrBin, "-v")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Warnf("error running mtr: %v:%s", err, string(out))
+		log.Debugf("error running %s -v: %v\n%s", mtrBin, err, string(out))
+		return err
+	}
+	log.Debugf("mtr version: %s", string(out))
+	log.Debugf("start mtr to %s", ip)
+	txt := ip
+	if t {
+		cmd = exec.Command(mtrBin, "-j", ip, "-T", "-P", port)
+		txt = ip + ":" + port
+	} else {
+		cmd = exec.Command(mtrBin, "-j", ip)
+	}
+	log.Debugf("mtr command %s", strings.Join(cmd.Args, " "))
+	fmt.Printf("Waiting for MTR results to %s ...\n", txt)
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Debugf("error running mtr: %v:%s", err, string(out))
 		err = fmt.Errorf("%s:%s", err, string(out))
 		return
 	}
 	if len(out) == 0 {
-		log.Warnf("no output")
-		err = fmt.Errorf("no output")
+		log.Debugf("got no output from mtr")
+		err = fmt.Errorf("got no output from ")
 		return
 	}
+	log.Debugf("mtr output: %s", string(out))
 	if out[0] != '{' {
-		log.Warnf("no json output: %s", string(out))
-		err = fmt.Errorf("no json output: %s", string(out))
+		log.Debugf("mtr output is not json")
+		err = fmt.Errorf("mtr output is not json")
 		return
 	}
 	_, err = mtr.Parse(out)
@@ -158,7 +170,7 @@ func (mtr *MTR) Run(ip string, port string, t bool) (err error) {
 
 func (mtr *MTR) Parse(b []byte) (hops []HopsMTR, err error) {
 	hops = []HopsMTR{}
-
+	log.Debugf("parse mtr json")
 	// sanity
 	b = sanityJSON(b)
 	err = json.Unmarshal(b, &mtr)
@@ -197,7 +209,9 @@ func sanityJSON(b []byte) []byte {
 			}
 		}
 	}
+
 	s = strings.Join(lines, "\n")
+	log.Debugf("mtr after sanity json: %s", s)
 	b = []byte(s)
 	return b
 }

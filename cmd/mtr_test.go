@@ -104,21 +104,25 @@ func TestMTR(t *testing.T) {
 	if runtime.GOOS == osWin {
 		t.Skip("Skipping MTR test on Windows")
 	}
-	if !common.CommandExists("mtr") {
-		t.Skip("Skipping MTR test, not in path")
+	mtr := common.GetEnv("MTR_BIN", mtrBin)
+	t.Logf("Running MTR test with %s", mtr)
+	if !common.CommandExists(mtr) {
+		t.Skip("Skipping MTR test, not found")
 	}
 
 	t.Run("CMD MTR", func(t *testing.T) {
 		args := []string{
 			"mtr",
 			"-a", testURL,
+			"-t",
+			"-m", mtr,
 			"--unit-test",
 			"--debug",
 		}
 		out, err = common.CmdRun(RootCmd, args)
 		assert.NoErrorf(t, err, "mtr command should not return an error:%s", err)
 		assert.NotEmpty(t, out, "mtr command should not return an empty string")
-		assert.Containsf(t, out, "HTTPing done", "HTTP command should contain HTTPing done")
+		assert.Containsf(t, out, "MTR done", "MTR command should contain MTR done")
 		t.Logf(out)
 	})
 }

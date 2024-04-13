@@ -67,15 +67,17 @@ nfpms:
     description: |-
       Tcping2 is a ip probe command line tool, supporting ICMP and TCP protocols 
       It may also run an httptrace and ip traces (using system mtr installation).
+      You can also use it to query IP network information from https://ifconfig.is.
     formats:
       - rpm
       - deb
-    # dependencies:
+    dependencies:
+      - mtr
     provides:
       # dont use {{ .ProjectName }} here :(
       - tcping2
     contents:
-      - src: "LICENSE"
+      - src: "LICENSE.md"
         dst: /usr/share/doc/{{ .ProjectName }}/
 
 
