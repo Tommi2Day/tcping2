@@ -1,0 +1,11 @@
+coverage:
+  range: 50..75
+  ignore:
+    - "*/vendor/*"
+    - "*/test/*"
+  status:
+    patch: false
+    project:
+      default:
+        target: 30%
+        threshold: 1%
