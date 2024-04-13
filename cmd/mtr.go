@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -57,22 +58,26 @@ var (
 		SilenceUsage: true,
 	}
 	tcpFlag = false
+	mtrBin  = "mtr"
 )
+
+const osWin = "windows"
 
 func init() {
 	mtrCmd.Flags().StringVarP(&queryAddress, "address", "a", "", "ip/host to ping")
 	mtrCmd.Flags().StringVarP(&queryPort, "port", "p", "", "tcp port to ping")
+	mtrCmd.Flags().StringVarP(&mtrBin, "mtr", "m", mtrBin, "mtr binary path")
 	mtrCmd.Flags().BoolVarP(&tcpFlag, "tcp", "t", false, "use TCP instead of ICMP")
 	os := runtime.GOOS
-	if os != "windows" {
+	if os != osWin {
 		// mtr cli is not available on windows
 		RootCmd.AddCommand(mtrCmd)
 	}
 }
 
 func runMTR(_ *cobra.Command, args []string) error {
-	if !common.CommandExists("mtr") {
-		return fmt.Errorf("mtr command not found")
+	if !common.CommandExists(mtrBin) {
+		return fmt.Errorf("mtr command '%s' not found", mtrBin)
 	}
 	if len(args) > 0 {
 		queryAddress = args[0]
@@ -153,6 +158,9 @@ func (mtr *MTR) Run(ip string, port string, t bool) (err error) {
 
 func (mtr *MTR) Parse(b []byte) (hops []HopsMTR, err error) {
 	hops = []HopsMTR{}
+
+	// sanity
+	b = sanityJSON(b)
 	err = json.Unmarshal(b, &mtr)
 	if err != nil {
 		log.Warnf("error parsing json: %v:%s", err, string(b))
@@ -161,4 +169,50 @@ func (mtr *MTR) Parse(b []byte) (hops []HopsMTR, err error) {
 	}
 	hops = mtr.Report.Hops
 	return
+}
+
+func sanityJSON(b []byte) []byte {
+	var v int64
+	var e error
+	s := string(b)
+	lines := strings.Split(s, "\n")
+	for i, l := range lines {
+		f := strings.Split(l, ":")
+		if len(f) > 1 {
+			z := f[1]
+			switch {
+			case strings.Contains(f[0], "tos"), strings.Contains(f[0], "tests"), strings.Contains(f[0], "count"):
+
+				v, e = getHexValInt64(z)
+				if e != nil {
+					log.Warnf("error parsing intval in json: %v:%s", e, string(b))
+					v = 0
+				}
+				// take care to repeat last comma in json
+				if strings.LastIndex(z, ",") > 0 {
+					lines[i] = fmt.Sprintf(`%s: %d,`, f[0], int(v))
+				} else {
+					lines[i] = fmt.Sprintf(`%s: %d`, f[0], int(v))
+				}
+			}
+		}
+	}
+	s = strings.Join(lines, "\n")
+	b = []byte(s)
+	return b
+}
+
+func getHexValInt64(value string) (int64, error) {
+	var v int64
+	var err error
+	value = strings.TrimSpace(value)
+	value = strings.TrimSuffix(value, ",")
+	value = strings.ReplaceAll(value, `"`, "")
+	if strings.Contains(value, "0x") {
+		value = strings.TrimPrefix(value, "0x")
+		v, err = strconv.ParseInt(value, 16, 64)
+	} else {
+		v, err = strconv.ParseInt(value, 10, 64)
+	}
+	return v, err
 }

@@ -70,6 +70,7 @@ func runQuery(_ *cobra.Command, args []string) error {
 		info.IP = a
 		logQuery(info)
 	}
+	log.Debugf("Query done")
 	return nil
 }
 
@@ -86,20 +87,26 @@ func QueryInfo(address string) (info IPInfo, err error) {
 		return
 	}
 	if res != nil {
+		log.Debugf("response status for %s: %s", address, res.Status)
 		defer func(b io.ReadCloser) {
 			_ = b.Close()
 		}(res.Body)
 		body, err = io.ReadAll(res.Body)
 		if err != nil {
+			log.Debugf("failed to read response body: %s", err)
 			return
 		}
 		err = json.Unmarshal(body, &info)
+		if err == nil {
+			log.Debugf("json parsed")
+		}
 	}
 	return
 }
 
 // logQuery logs the query results
 func logQuery(info IPInfo) {
+	log.Debugf("Loging for IP %s", info.IP)
 	v := reflect.ValueOf(info)
 	names := make([]string, v.NumField())
 	values := make([]string, v.NumField())
@@ -125,6 +132,7 @@ func logQuery(info IPInfo) {
 	}
 	// separate entries
 	fmt.Println()
+	log.Debugf("Log for %s done", info.IP)
 }
 
 // getMaxNameLength returns the length of the longest field name
@@ -135,5 +143,6 @@ func getMaxNameLength(names []string) int {
 			length = len(val)
 		}
 	}
+	log.Debugf("Max name length: %d", length)
 	return length
 }

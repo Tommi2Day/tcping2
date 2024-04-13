@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/spf13/cobra"
 	"github.com/tommi2day/gomodules/common"
 	"golang.org/x/net/icmp"
@@ -95,11 +97,18 @@ func runICMPPing(_ *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		queryAddress = args[0]
 	}
+	log.Debugf("ICMPing called with %s:%s", queryAddress, queryPort)
 	if queryAddress == "" {
 		return fmt.Errorf("please specify an address to query")
 	}
-	ips, err := dnsConfig.LookupIP(queryAddress)
+	host, _, err := common.GetHostPort(queryAddress)
 	if err != nil {
+		log.Debugf("ICMPing GetHostPort failed: %v", err)
+		return err
+	}
+	ips, err := dnsConfig.LookupIP(host)
+	if err != nil {
+		log.Debugf("DNS lookup failed: %v", err)
 		return err
 	}
 	i := new(ICMPing)
@@ -107,6 +116,7 @@ func runICMPPing(_ *cobra.Command, args []string) error {
 		err = i.Run(ip.String())
 		i.Log(err)
 	}
+	log.Debugf("ICMPing done")
 	return nil
 }
 
@@ -118,6 +128,7 @@ func runTCPPing(_ *cobra.Command, args []string) error {
 	if len(args) > 1 {
 		queryPort = args[1]
 	}
+	log.Debugf("TCPing called with %s:%s", queryAddress, queryPort)
 	// check if address is set
 	if queryAddress == "" {
 		return fmt.Errorf("please specify an address to ping")
@@ -125,10 +136,12 @@ func runTCPPing(_ *cobra.Command, args []string) error {
 	// join address and port if port set
 	if queryPort != "" {
 		queryAddress = fmt.Sprintf("%s:%s", queryAddress, queryPort)
+		log.Debugf("TCPing address set: %s", queryAddress)
 	}
 	// normalize host and port
 	host, port, err := common.GetHostPort(queryAddress)
 	if err != nil {
+		log.Debugf("Parsing host and port failed: %v", err)
 		return err
 	}
 	// if port is set and queryPort is not set, use port
@@ -154,16 +167,19 @@ func runTCPPing(_ *cobra.Command, args []string) error {
 		_ = t.Run(dst)
 		t.Log()
 	}
+	log.Debugf("TCPing done")
 	return nil
 }
 
 // Run sends a TCP request to a given address and returns the status of the connection
 func (t *TCPing) Run(address string) (msg string) {
+	log.Debugf("TCPing started for %s", address)
 	timeout := time.Duration(pingTimeout) * time.Second
 	t.Address = address
 	d := net.Dialer{Timeout: timeout}
 	_, err := d.Dial("tcp", address)
 	if err != nil {
+		log.Debugf("TCPing dial message: %v", err)
 		match, _ := regexp.MatchString("refused", err.Error())
 		if match {
 			// Closed
@@ -195,6 +211,7 @@ func (t *TCPing) Run(address string) (msg string) {
 
 // Log logs the tcping results
 func (t *TCPing) Log() {
+	log.Debugf("enter TCPing Log with %s code %d message: %v", t.Address, t.Code, t.Msg)
 	switch t.Code {
 	case 0:
 		fmt.Printf("%s%s%s\n", cyan("%-7s", "TCP"), green("%-10s", t.Msg), t.Address)
@@ -207,6 +224,7 @@ func (t *TCPing) Log() {
 
 // Log logs the ping results
 func (i *ICMPing) Log(err error) {
+	log.Debugf("enter ICMPing Log %s", i.IP.String())
 	if err != nil {
 		match, _ := regexp.MatchString("operation not permitted", err.Error())
 		if match {
@@ -217,26 +235,31 @@ func (i *ICMPing) Log(err error) {
 		} else {
 			fmt.Printf("%s%s%s\n",
 				cyan("%-7s", "ICMP"),
-				red("%-10s", "ERROR"), i.IP.String())
+				red("%-10s", "ERROR"), err)
 		}
+		log.Debugf("result ICMPing to %s: ERROR (%v)", i.IP.String(), err)
 		return
 	}
-	fmt.Printf("%s%s%s    %s ms\n",
+	log.Debugf("result ICMPing to %s: OPEN", i.IP.String())
+	fmt.Printf("%s%s%-30s    %s ms\n",
 		cyan("%-7s", "ICMP"),
 		green("%-10s", "OPEN"), i.IP.String(),
 		fmt.Sprintf("%.1f", float64(i.Duration.Microseconds())/1000))
 }
 
 // Run sends an ICMP echo request to a given address and returns the time it took to get a reply
-func (i *ICMPing) Run(address string) (err error) {
+func (i *ICMPing) Run(host string) (err error) {
 	// Check ip type
 	// Resolve address
 	var dst *net.IPAddr
 	var c *icmp.PacketConn
-	dst, err = net.ResolveIPAddr("ip4", address)
+	log.Debugf("ICMPing Run to %s", host)
+	dst, err = net.ResolveIPAddr("ip4", host)
 	if err != nil {
-		dst, err = net.ResolveIPAddr("ip6", address)
+		log.Debugf("ICMPing ResolveIPAddr ip4 failed: %v", err)
+		dst, err = net.ResolveIPAddr("ip6", host)
 		if err != nil {
+			log.Debugf("ICMPing ResolveIPAddr ip6 failed: %v", err)
 			return
 		}
 		i.IPType = IPType6
@@ -244,9 +267,11 @@ func (i *ICMPing) Run(address string) (err error) {
 		i.IPType = IPType4
 	}
 	i.IP = dst
+	log.Debugf("prepare ICMPing to IP %s type %s", i.IP.String(), i.IPType.Type)
 	// Start listening for icmp replies
 	c, err = icmp.ListenPacket(i.IPType.ICMPNetwork, i.IPType.ListenAddr)
 	if err != nil {
+		log.Debugf("ICMPing ListenPacket failed: %v", err)
 		return err
 	}
 	defer func(c *icmp.PacketConn) {
@@ -271,19 +296,24 @@ func (i *ICMPing) Run(address string) (err error) {
 	start := time.Now()
 	n, err := c.WriteTo(b, dst)
 	if err != nil {
+		log.Debugf("ICMPing WriteTo failed: %v", err)
 		return err
 	} else if n != len(b) {
+		log.Debugf("ICMPing WriteTo failed: got %v; want %v", n, len(b))
 		return fmt.Errorf("got %v; want %v", n, len(b))
 	}
 
 	// Wait for a reply
+	log.Debugf("ICMPing waiting for reply")
 	reply := make([]byte, 1500)
 	err = c.SetReadDeadline(time.Now().Add(3 * time.Second))
 	if err != nil {
+		log.Debugf("ICMPing SetReadDeadline failed: %v", err)
 		return err
 	}
 	n, peer, err := c.ReadFrom(reply)
 	if err != nil {
+		log.Debugf("ICMPing ReadFrom failed: %v", err)
 		return err
 	}
 	duration := time.Since(start)
@@ -291,6 +321,7 @@ func (i *ICMPing) Run(address string) (err error) {
 	// Pack it up boys, we're done here
 	rm, err := icmp.ParseMessage(i.IPType.ProtocolNumber, reply[:n])
 	if err != nil {
+		log.Debugf("ICMPing ParseMessage failed: %v", err)
 		return err
 	}
 
@@ -298,8 +329,10 @@ func (i *ICMPing) Run(address string) (err error) {
 	switch rm.Type {
 	case i.IPType.ReplyMessageType:
 		i.Duration = duration
+		log.Debugf("ICMPing ReplyMessageType received, duration %v", i.Duration)
 		return nil
 	default:
+		log.Debugf("ICMPing ReplyMessageType not received: got %+v from %v; want echo reply", rm, peer)
 		return fmt.Errorf("got %+v from %v; want echo reply", rm, peer)
 	}
 }

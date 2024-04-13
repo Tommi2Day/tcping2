@@ -57,16 +57,18 @@ func runHTTPPing(_ *cobra.Command, args []string) error {
 	h := new(HTTPing)
 	err := h.Run(queryAddress)
 	if err != nil {
+		log.Debugf("HTTPing failed: %v", err)
 		return err
 	}
 	h.Log()
+	log.Debugf("HTTPing done")
 	return nil
 }
 
 // Run New sends an HTTP request to a given address and returns the time it took to get a reply
 func (h *HTTPing) Run(address string) (err error) {
 	var t0, t1, t2, t3, t4, t5, t6, t7 int64
-
+	log.Debugf("HTTPing started for %s", address)
 	// check if is address really an URL, if not add https://
 	if !strings.Contains(address, "://") {
 		log.Debugf("Adding scheme to address %s", address)
@@ -122,6 +124,7 @@ func (h *HTTPing) Run(address string) (err error) {
 	c := &http.Client{
 		Timeout: 5 * time.Second,
 	}
+	log.Debugf("HTTPing do request")
 	_, err = c.Do(req)
 	if err != nil {
 		match, _ := regexp.MatchString("Client.Timeout exceeded", err.Error())
@@ -129,9 +132,10 @@ func (h *HTTPing) Run(address string) (err error) {
 			err = fmt.Errorf("HTTP connection timeout")
 		}
 		err = fmt.Errorf("HTTP Client returned '%s'", err)
+		log.Debugf("HTTPing failed: %v", err)
 		return
 	}
-
+	log.Debugf("HTTPing create Statistics")
 	// create statistics
 	t7 = time.Now().UnixNano()
 
@@ -150,6 +154,7 @@ func (h *HTTPing) Run(address string) (err error) {
 	// Detect system proxies
 	pc := httpproxy.FromEnvironment()
 	if pc.HTTPProxy != "" {
+		log.Debugf("HTTPing detected proxy %s", pc.HTTPProxy)
 		h.Proxy = true
 	}
 	return
@@ -157,6 +162,7 @@ func (h *HTTPing) Run(address string) (err error) {
 
 // Log logs the httping results
 func (h *HTTPing) Log() {
+	log.Debugf("enter log HTTPing results for  %s", h.URL)
 	host, port, err := common.GetHostPort(h.URL)
 	if err == nil {
 		fmt.Printf("%s:    %s\n", cyan("%-10s", "URL"), h.URL)
@@ -172,7 +178,9 @@ func (h *HTTPing) Log() {
 		fmt.Printf("%s:    %.2f ms\n", cyan("%-10s", "Process"), float64(h.Process)/1e6)
 		fmt.Printf("%s:    %.2f ms\n", cyan("%-10s", "Transfer"), float64(h.Transfer)/1e6)
 		fmt.Printf("%s:    %.2f ms\n", cyan("%-10s", "Total"), float64(h.Total)/1e6)
+		log.Debugf("result HTTPing for %s: OK", h.URL)
 		return
 	}
 	fmt.Printf("%s%s%s\n", cyan("%-7s", "HTTP"), red(" %s: ", "ERROR"), err)
+	log.Debugf("result HTTPing for %s: ERROR (%v)", h.URL, err)
 }
