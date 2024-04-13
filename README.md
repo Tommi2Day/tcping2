@@ -103,8 +103,10 @@ Usage:
 Flags:
   -a, --address string   ip/host to ping
   -h, --help             help for mtr
+  -m, --mtr string       mtr binary path or use MTR_BIN env var (default "mtr")
   -p, --port string      tcp port to ping
   -t, --tcp              use TCP instead of ICMP
+
 #-------------------------------------------------------------
 tcping2 query --help
 Query host ip information

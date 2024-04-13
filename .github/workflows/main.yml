@@ -16,7 +16,7 @@ jobs:
         run: |
           go mod tidy
           go mod vendor
-          sudo apt-get update && sudo apt-get install -y mtr
+          sudo apt-get update && sudo apt-get install -y mtr-tiny
       - name: Test
         run: go test -v ./...  -coverprofile=coverage.txt -covermode=atomic
         env:

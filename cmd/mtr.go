@@ -58,7 +58,7 @@ var (
 		SilenceUsage: true,
 	}
 	tcpFlag = false
-	mtrBin  = "mtr"
+	mtrBin  = common.GetEnv("MTR_BIN", "mtr")
 )
 
 const osWin = "windows"
@@ -66,7 +66,7 @@ const osWin = "windows"
 func init() {
 	mtrCmd.Flags().StringVarP(&queryAddress, "address", "a", "", "ip/host to ping")
 	mtrCmd.Flags().StringVarP(&queryPort, "port", "p", "", "tcp port to ping")
-	mtrCmd.Flags().StringVarP(&mtrBin, "mtr", "m", mtrBin, "mtr binary path")
+	mtrCmd.Flags().StringVarP(&mtrBin, "mtr", "m", mtrBin, "mtr binary path or use MTR_BIN env var")
 	mtrCmd.Flags().BoolVarP(&tcpFlag, "tcp", "t", false, "use TCP instead of ICMP")
 	os := runtime.GOOS
 	if os != osWin {
