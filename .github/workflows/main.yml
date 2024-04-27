@@ -21,6 +21,7 @@ jobs:
         run: go test -v ./...  -coverprofile=coverage.txt -covermode=atomic
         env:
           SKIP_ICMP: "true"
+          SKIP_ECHO_SERVER: "true"
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
         with:
