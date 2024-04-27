@@ -16,6 +16,7 @@ this is a rewritten version of [i3h/tcping](https://github.com/i3h/tcping)
 - HTTPTrace
 - Traceroute based on a system installed mtr (not available on Windows)
 - Query basic IP information from [https://ifconfig.is](https://ifconfig.is).
+- Echo Server and Client
 
 ## Installation
 

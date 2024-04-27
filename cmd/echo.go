@@ -133,7 +133,7 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 		msg = strings.TrimSuffix(string(bytes), "\n")
 		log.Infof("got %s from client", msg)
 		if strings.HasPrefix(msg, echoPrefix) {
-			log.Debugf("is TCPING, send version to client")
+			log.Debugf("prefix is %s, send version to client", echoPrefix)
 			amsg := fmt.Sprintf("%s Server %s %s\n", echoPrefix, servername, version)
 			_, err = conn.Write([]byte(amsg))
 			if err != nil {
@@ -194,7 +194,8 @@ func runClient() (err error) {
 
 	// send the TCPING message to the server
 	log.Infof("send %s version to server", echoPrefix)
-	msg := fmt.Sprintf("%s client %s %s\n", echoPrefix, servername, version)
+	msg := fmt.Sprintf("%s , client %s %s\n", echoPrefix, servername, version)
+	log.Debugf("send %s", msg)
 	_, err = conn.Write([]byte(msg))
 	if err != nil {
 		err = fmt.Errorf("failed to write data to server: %s", err)
@@ -203,6 +204,7 @@ func runClient() (err error) {
 	}
 
 	// read from connection and send back to server
+	time.Sleep(1 * time.Second)
 	reader := bufio.NewReader(conn)
 	var line []byte
 	line, err = reader.ReadBytes(byte('\n'))
@@ -217,7 +219,7 @@ func runClient() (err error) {
 		return
 	}
 	msg = strings.TrimSuffix(string(line), "\n")
-	log.Debugf(msg)
+	log.Debugf("received: %s", msg)
 
 	// check if the server response is a TCPING message
 	if strings.HasPrefix(msg, echoPrefix) {

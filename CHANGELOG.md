@@ -1,7 +1,7 @@
 # tnsping2
 
 ## [1.1.0 - 2024-04-27]
-- added echo Server and Client
+- added echo Server and Client and related tests
 - update dependencies
 - reduce complexity for ping tcp
 
