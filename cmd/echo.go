@@ -75,6 +75,7 @@ func runEchoServer(host, port string) (err error) {
 	// create a tcp listener on the given port
 	log.Debugf("try to listen on %s:%s", host, port)
 	ch := make(chan echoResult)
+	defer close(ch)
 	addr := net.JoinHostPort(host, port)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -107,7 +108,6 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 	defer func(conn net.Conn) {
 		_ = conn.Close()
 	}(conn)
-	defer close(ch)
 
 	log.Debugf("set connection deadline to %d seconds", pingTimeout)
 	reader := bufio.NewReader(conn)
@@ -121,13 +121,15 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 		msg := fmt.Sprintf("got connection from %s", remote)
 		log.Infof(msg)
 		fmt.Println(msg)
+		time.Sleep(1 * time.Second)
 		bytes, err := reader.ReadBytes(byte('\n'))
 		if err != nil {
 			if err != io.EOF {
 				err = fmt.Errorf("failed to read data, err:%s", err)
+				log.Error(err)
+				ch <- echoResult{err: err, finish: true}
 			}
-			log.Error(err)
-			ch <- echoResult{err: err, finish: true}
+			ch <- echoResult{err: err, finish: false}
 			return
 		}
 		msg = strings.TrimSuffix(string(bytes), "\n")

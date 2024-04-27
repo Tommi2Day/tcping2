@@ -20,7 +20,7 @@ var echoContainerName string
 
 // prepareEchoContainer create a Docker Container for tcping2 echo server
 func prepareEchoContainer() (container *dockertest.Resource, err error) {
-	if os.Getenv("SKIP_ECHO_SERVER") != "" {
+	if os.Getenv("SKIP_ECHO_CONTAINER") != "" {
 		err = fmt.Errorf("skipping Echo Server Container in CI environment")
 		return
 	}
@@ -48,10 +48,6 @@ func prepareEchoContainer() (container *dockertest.Resource, err error) {
 		},
 	}
 	dockerContextDir := test.TestDir + "/../"
-	if err != nil {
-		err = fmt.Errorf("could not change to Docker Context Dir: %s", err)
-		return
-	}
 	container, err = pool.BuildAndRunWithBuildOptions(
 		&dockertest.BuildOptions{
 			BuildArgs:  buildArgs,
@@ -64,7 +60,7 @@ func prepareEchoContainer() (container *dockertest.Resource, err error) {
 			ExposedPorts: []string{"8080/tcp"},
 		}, func(config *docker.HostConfig) {
 			// set AutoRemove to true so that stopped container goes away by itself
-			config.AutoRemove = true
+			// config.AutoRemove = true
 			config.RestartPolicy = docker.RestartPolicy{Name: "no"}
 		})
 
