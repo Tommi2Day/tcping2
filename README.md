@@ -7,17 +7,17 @@
 
 Tcping2 is a ip probe command line tool, supporting ICMP, TCP and HTTP protocols
 
-this is a rewritten version of [i3h/tcping](https://github.com/i3h/tcping) 
+this is a rewritten version of [i3h/tcping](https://github.com/i3h/tcping)
 
-# Features
+## Features
 
 - Support ICMP/TCP protocols
-- Support IPv4/IPv6 addresses or IPv4 Only
+- Support resolving hostnames to IPv4/IPv6 addresses or IPv4 Only
 - HTTPTrace
-- Traceroute using mtr (based on system installed mtr, not avaiable on Windows)
+- Traceroute based on a system installed mtr (not available on Windows)
 - Query basic IP information from [https://ifconfig.is](https://ifconfig.is).
 
-# Installation
+## Installation
 
 Download latest release binaries from [Github](https://github.com/tommi2day/tcping2)
 or use go install
@@ -35,11 +35,13 @@ go build
 # Usage
 
 ```
+tcping2 --help
   Usage:
   tcping2 [command]
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
+  echo        try echo using TCP protocol
   help        Help about any command
   http        Ping using HTTP protocol
   icmp        Ping using ICMP protocol
@@ -61,6 +63,17 @@ Flags:
       --unit-test          redirect output for unit tests
 
 Use "tcping2 [command] --help" for more information about a command.
+#-------------------------------------------------------------
+tcping2 echo --help
+Usage:
+  tcping2 echo [flags]
+
+Flags:
+  -a, --address string   ip/host to contact
+  -h, --help             help for echo
+  -p, --port string      tcp port to contact/serve
+  -s, --server           Run as echo server
+  -t, --timeout int      Echo Timeout in sec (default 3)
 #-------------------------------------------------------------
 tcping2 http --help
 Run httptrace to the target
@@ -121,12 +134,12 @@ Flags:
 tcping2 version
 ```
 
-# Note
+### Note
 
 Root permission is required when running ICMP ping or MTR, since it needs to open raw socket.
-You can either use sudo command, or set setuid bit for tcping.
+You can either use sudo command, or set setuid bit for tcping2.
 
-# Examples
+## Examples
 
 ```bash
 # ping google.com (ipv4 only)
@@ -138,7 +151,7 @@ ICMP   OPEN      74.125.133.102    16.7 ms
 ICMP   OPEN      74.125.133.113    16.7 ms
 ICMP   OPEN      74.125.133.139    16.8 ms
 #-------------------------------------------------------------
-tcping2 icmp -a google.com 
+tcping2 icmp -a google.com
 ICMP   OPEN      142.250.185.238    10.3 ms
 ICMP   ERROR     2a00:1450:4001:82f::200e
 #-------------------------------------------------------------
@@ -202,7 +215,7 @@ ORG      :    Google LLC
 #-------------------------------------------------------------
 
 # run ip icmp trace to google.com
-sudo tcping2 mtr -a google.com 
+sudo tcping2 mtr -a google.com
 Waiting for MTR results to 142.250.184.238 ...
 Hop    1 192.168.0.22                                                 Loss:   0.00% Avg:  0.54
 Hop    2 192.168.0.1                                                  Loss:   0.00% Avg:  1.19
@@ -230,18 +243,34 @@ Hop    7 192.178.71.154                                               Loss:   0.
 Hop    8 209.85.244.249                                               Loss:   0.00% Avg: 10.54ms
 Hop    9 142.250.225.77                                               Loss:   0.00% Avg:  9.75ms
 Hop   10 fra16s52-in-f14.1e100.net                                    Loss:   0.00% Avg:  9.83ms
+start echo server
+#-------------------------------------------------------------
 
+# start echo server
+echo --server -p 9999 --timeout 10
+listening on [::]:9999, terminate with CTRL-C
+got connection from [::1]:49916
+TCPING Server NB6.localdomain tcping2 version version 1.1.0-1 (e0de623 - 2024-04-27)
+got connection from [::1]:49916
+got quit, terminate server
+#-------------------------------------------------------------
 
+#connect to echo server
+tcping2 echo localhost 9999 --info
+[Sat, 27 Apr 2024 14:13:39 CEST]  INFO connected to [::1]:9999
+[Sat, 27 Apr 2024 14:13:39 CEST]  INFO send TCPING version to server
+[Sat, 27 Apr 2024 14:13:39 CEST]  INFO answered 'TCPING Server localhost.localdomain tcping2 version 1.1.0-1 (e0de623 - 2024-04-27)'
+connection to [::1]:9999 successful tested
+[Sat, 27 Apr 2024 14:13:39 CEST]  INFO Echo done
 
+# echo to standard server with timeout
+tcping2 echo www.google.com:80 --timeout 3
+Error: failed to read data, err:read tcp 127.0.0.1:65324->172.217.23.100:80: i/o timeout
 ```
 
+## Credits
 
-# Acknowledgements
-
-[lmas/icmp_ping.go](https://gist.github.com/lmas/c13d1c9de3b2224f9c26435eb56e6ef3)
-
-[sparrc/go-ping](https://github.com/sparrc/go-ping)
-
-[davecheney/httpstat](https://github.com/davecheney/httpstat)
-
-[i3h/tcping](https://github.com/i3h/tcping)
+- [lmas/icmp_ping.go](https://gist.github.com/lmas/c13d1c9de3b2224f9c26435eb56e6ef3)
+- [sparrc/go-ping](https://github.com/sparrc/go-ping)
+- [davecheney/httpstat](https://github.com/davecheney/httpstat)
+- [i3h/tcping](https://github.com/i3h/tcping)
