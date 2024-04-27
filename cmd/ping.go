@@ -129,34 +129,11 @@ func runTCPPing(_ *cobra.Command, args []string) error {
 		queryPort = args[1]
 	}
 	log.Debugf("TCPing called with %s:%s", queryAddress, queryPort)
+
 	// check if address is set
-	if queryAddress == "" {
-		return fmt.Errorf("please specify an address to ping")
-	}
-	// join address and port if port set
-	if queryPort != "" {
-		queryAddress = fmt.Sprintf("%s:%s", queryAddress, queryPort)
-		log.Debugf("TCPing address set: %s", queryAddress)
-	}
-	// normalize host and port
-	host, port, err := common.GetHostPort(queryAddress)
+	ips, err := normalizeAddress()
 	if err != nil {
-		log.Debugf("Parsing host and port failed: %v", err)
-		return err
-	}
-	// if port is set and queryPort is not set, use port
-	if port > 0 && queryPort == "" {
-		queryPort = fmt.Sprintf("%d", port)
-	} else if len(args) > 1 {
-		queryPort = args[1]
-	}
-	// finally check if port is really set
-	if queryPort == "" {
-		return fmt.Errorf("please specify a port to ping")
-	}
-	// query DNS
-	ips, err := dnsConfig.LookupIP(host)
-	if err != nil {
+		log.Debugf("TCPing normalizeAddress failed: %v", err)
 		return err
 	}
 
@@ -169,6 +146,39 @@ func runTCPPing(_ *cobra.Command, args []string) error {
 	}
 	log.Debugf("TCPing done")
 	return nil
+}
+
+func normalizeAddress() (ips []net.IP, err error) {
+	ips = []net.IP{}
+	var host string
+	var port int
+	if queryAddress == "" {
+		err = fmt.Errorf("please specify an address to ping")
+		return
+	}
+	// join address and port if port set
+	if queryPort != "" {
+		queryAddress = fmt.Sprintf("%s:%s", queryAddress, queryPort)
+		log.Debugf("TCPing address set: %s", queryAddress)
+	}
+	// normalize host and port
+	host, port, err = common.GetHostPort(queryAddress)
+	if err != nil {
+		log.Debugf("Parsing host and port failed: %v", err)
+		return
+	}
+	// if port is set and queryPort is not set, use port
+	if port > 0 && queryPort == "" {
+		queryPort = fmt.Sprintf("%d", port)
+	}
+	// finally check if port is really set
+	if queryPort == "" {
+		err = fmt.Errorf("please specify a port to ping")
+		return
+	}
+	// query DNS
+	ips, err = dnsConfig.LookupIP(host)
+	return
 }
 
 // Run sends a TCP request to a given address and returns the status of the connection

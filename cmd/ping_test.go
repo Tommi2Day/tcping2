@@ -16,6 +16,7 @@ func TestTCPPing(t *testing.T) {
 		args := []string{
 			"tcp",
 			"-a", testURL,
+			"-p", "",
 			"--unit-test",
 			"--debug",
 		}
@@ -23,7 +24,7 @@ func TestTCPPing(t *testing.T) {
 		assert.NoErrorf(t, err, "TCP command should not return an error:%s", err)
 		assert.NotEmpty(t, out, "TCP command should not return an empty string")
 		assert.Contains(t, out, " OPEN", "TCP command should contain OPEN")
-		assert.Containsf(t, out, "TCPing done", "Query command should contain HTTPing done")
+		assert.Containsf(t, out, "TCPing done", "Query command should contain TCPing done")
 		t.Logf(out)
 	})
 }
