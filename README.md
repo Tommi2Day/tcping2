@@ -4,6 +4,7 @@
 ![CI](https://github.com/tommi2day/tcping2/actions/workflows/main.yml/badge.svg)
 [![codecov](https://codecov.io/gh/Tommi2Day/tcping2/branch/main/graph/badge.svg?token=C1IP9AMBUM)](https://codecov.io/gh/Tommi2Day/tcping2)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/tommi2day/tcping2)
+[![Docker Pulls](https://img.shields.io/docker/pulls/tommi2day/tcping2.svg)](https://hub.docker.com/r/tommi2day/tcping2/)
 
 Tcping2 is an ip probe command line tool, supporting ICMP, TCP and HTTP protocols
 
@@ -22,22 +23,21 @@ this is a rewritten version of [i3h/tcping](https://github.com/i3h/tcping)
 ## Installation
 
 Download latest release binaries from [Gitlab](https://gitlab.intern.tdressler.net/goproj/tcping2)
-or use go install
-
+or use released Docker Container on [Dockerhub](https://hub.docker.com/r/tommi2day/tcping2)
 ```
-go install -u github.com/tommi2day/tcping2@latest
+docker pull tommi2day/tcping2
 ```
-or Build on your own
-
-```
-git clone https://github.com/tommi2day/tcping2.git
-go build
-```
-## build Docker Container
+or build docker container for yourself
 ```
 docker build -t tcping2 -f Dockerfile .
 ```
 container exposes port 8080 for echo server
+
+or Build on your own
+```
+git clone https://github.com/tommi2day/tcping2.git
+go build
+``` 
 ## Usage
 
 ```
@@ -143,13 +143,13 @@ tcping2 version
 ### use docker container
 docker container can be used to run tcping2 without installation. Per default it starts the echo server. 
 ```bash
-docker run -d --rm -p 8080:8080 tcping2
+docker run -d --rm -p 8080:8080 tommi2day/tcping2
 listening on [::]:8080, terminate with CTRL-C
 ...
 echo -e "Hello\nQUIT\n"|nc localhost 8080
 Hello
 #-------------------------------------------------------------
-docker run -it --rm tcping2 tcp google.com 80 --dnsIPv4
+docker run -it --rm tommi2day/tcping2 tcp google.com 80 --dnsIPv4
 ```
 
 ### Note

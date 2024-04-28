@@ -65,5 +65,5 @@ jobs:
       - name: Push latest
         run: |
           docker pull docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:${{ env.TAG }}
-          docker tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:${{ env.TAG }}-${{ matrix.distribution }} docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest
+          docker tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:${{ env.TAG }} docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest
           docker push docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest
