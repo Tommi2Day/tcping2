@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -54,7 +55,13 @@ func TestEchoClient(t *testing.T) {
 		}()
 		time.Sleep(1 * time.Second)
 		c, e := net.Dial("tcp", echoIP+":39201")
+		_ = c.SetDeadline(time.Now().Add(3 * time.Second))
 		assert.NoErrorf(t, e, "Echo server should not return an error:%s", e)
+		testEcho := []byte("TEST TCPING\n")
+		_, _ = c.Write(testEcho)
+		r := bufio.NewReader(c)
+		answer, _ := r.ReadBytes('\n')
+		assert.Equal(t, testEcho, answer, "Echo server should return the same message")
 		_, _ = c.Write([]byte("QUIT\n"))
 	})
 

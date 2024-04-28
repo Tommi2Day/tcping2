@@ -124,13 +124,24 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 		time.Sleep(1 * time.Second)
 		bytes, err := reader.ReadBytes(byte('\n'))
 		if err != nil {
-			if err != io.EOF {
+			switch {
+			case err == io.EOF:
+				log.Debugf("EOF")
+				fmt.Println("No Data from client")
+				ch <- echoResult{err: err, finish: false}
+				return
+			case strings.Contains(err.Error(), "i/o timeout"):
+				err = fmt.Errorf("IO Timeout")
+				log.Debugf(err.Error())
+				fmt.Println(err.Error())
+				ch <- echoResult{err: err, finish: false}
+				return
+			default:
 				err = fmt.Errorf("failed to read data, err:%s", err)
-				log.Error(err)
+				log.Debugf("%s, terminate", err)
 				ch <- echoResult{err: err, finish: true}
+				return
 			}
-			ch <- echoResult{err: err, finish: false}
-			return
 		}
 		msg = strings.TrimSuffix(string(bytes), "\n")
 		log.Infof("got %s from client", msg)
@@ -139,7 +150,7 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 			amsg := fmt.Sprintf("%s Server %s %s\n", echoPrefix, servername, version)
 			_, err = conn.Write([]byte(amsg))
 			if err != nil {
-				log.Errorf("failed to write data to client, err:%s", err)
+				log.Debugf("failed to write data to client, err:%s", err)
 				ch <- echoResult{err: err, finish: true}
 				return
 			}
@@ -150,7 +161,15 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 			ch <- echoResult{err: nil, finish: true}
 			return
 		}
-		fmt.Println(msg)
+		fmt.Println("got ", msg)
+		// echo the message back to the client
+		log.Debugf("echo '%s' back to client", msg)
+		_, err = conn.Write(bytes)
+		if err != nil {
+			log.Debugf("failed to return data to client, err:%s", err)
+			ch <- echoResult{err: err, finish: true}
+			return
+		}
 	}
 }
 
@@ -166,6 +185,9 @@ func runClient() (err error) {
 	if len(ips) == 0 {
 		err = fmt.Errorf("no IP addresses found")
 		return
+	}
+	if len(ips) > 1 {
+		log.Warnf("more than one IP address found, using the first one")
 	}
 	// get the first IP address and create an address string
 	ip := ips[0].String()
