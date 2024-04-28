@@ -268,8 +268,8 @@ Hop   10 fra16s52-in-f14.1e100.net                                    Loss:   0.
 # `QUIT\n` terminates the server
 tcping2 echo --server -p 8080 --timeout 10
 # or use docker container, which starts without parameter the echo server (or give the full command parameters)
-docker run -it --rm -p 8080:8080 tcping2
-#connect with echo client
+docker run -it --rm -p 8080:8080 tommi2day/tcping2
+#connect with  tcping as echo client
 tcping2 echo localhost 8080
 # server output
 listening on [::]:8080, terminate with CTRL-C
@@ -284,7 +284,7 @@ connection to 127.0.0.1:8080 successful tested
 echo -e "Hello\nQUIT\n"|nc localhost 8080
 Hello
 # server
-docker run -it --rm -p 8080:8080 tcping2
+docker run -it --rm -p 8080:8080 tommi2day/tcping2
 listening on [::]:8080, terminate with CTRL-C
 got connection from 172.17.0.1:41918
 got  Hello
