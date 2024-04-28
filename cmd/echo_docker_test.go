@@ -14,8 +14,10 @@ import (
 )
 
 const echoContainerTimeout = 10
-const goVersion = "1.21"
 
+var vendorImagePrefix = os.Getenv("VENDOR_IMAGE_PREFIX")
+var goImage = common.GetEnv("GO_IMAGE", vendorImagePrefix+"docker.io/library/golang:1.21-bullseye")
+var runtimeImage = common.GetEnv("RUNTIME_IMAGE", vendorImagePrefix+"docker.io/library/debian:bullseye")
 var echoContainerName string
 
 // prepareEchoContainer create a Docker Container for tcping2 echo server
@@ -34,17 +36,15 @@ func prepareEchoContainer() (container *dockertest.Resource, err error) {
 		return
 	}
 
-	vendorImagePrefix := os.Getenv("VENDOR_IMAGE_PREFIX")
-
 	fmt.Printf("Try to build and start docker container  %s\n", echoContainerName)
 	buildArgs := []docker.BuildArg{
 		{
-			Name:  "VENDOR_IMAGE_PREFIX",
-			Value: vendorImagePrefix,
+			Name:  "RUNTIME_IMAGE",
+			Value: runtimeImage,
 		},
 		{
-			Name:  "GO_VERSION",
-			Value: goVersion,
+			Name:  "GO_IMAGE",
+			Value: goImage,
 		},
 	}
 	dockerContextDir := test.TestDir + "/../"
@@ -52,15 +52,16 @@ func prepareEchoContainer() (container *dockertest.Resource, err error) {
 		&dockertest.BuildOptions{
 			BuildArgs:  buildArgs,
 			ContextDir: dockerContextDir,
-			Dockerfile: "test/Dockerfile",
+			Dockerfile: "Dockerfile",
 		},
 		&dockertest.RunOptions{
 			Hostname:     echoContainerName,
 			Name:         echoContainerName,
 			ExposedPorts: []string{"8080/tcp"},
+			Entrypoint:   []string{"/tcping2", "echo", "--server", "--port", "8080", "--timeout", "15"},
 		}, func(config *docker.HostConfig) {
 			// set AutoRemove to true so that stopped container goes away by itself
-			// config.AutoRemove = true
+			config.AutoRemove = true
 			config.RestartPolicy = docker.RestartPolicy{Name: "no"}
 		})
 
@@ -68,7 +69,6 @@ func prepareEchoContainer() (container *dockertest.Resource, err error) {
 		err = fmt.Errorf("error starting echo docker container: %v", err)
 		return
 	}
-	// ip := container.Container.NetworkSettings.Networks[netlibNetworkName].IPAddress
 	pool.MaxWait = echoContainerTimeout * time.Second
 	host, port := common.GetContainerHostAndPort(container, "8080/tcp")
 	fmt.Printf("Wait to successfully connect to Echo Server to %s:%d (max %ds)...\n", host, port, echoContainerTimeout)

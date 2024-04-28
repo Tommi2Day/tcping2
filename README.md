@@ -5,7 +5,7 @@
 [![codecov](https://codecov.io/gh/Tommi2Day/tcping2/branch/main/graph/badge.svg?token=C1IP9AMBUM)](https://codecov.io/gh/Tommi2Day/tcping2)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/tommi2day/tcping2)
 
-Tcping2 is a ip probe command line tool, supporting ICMP, TCP and HTTP protocols
+Tcping2 is an ip probe command line tool, supporting ICMP, TCP and HTTP protocols
 
 this is a rewritten version of [i3h/tcping](https://github.com/i3h/tcping)
 
@@ -17,10 +17,11 @@ this is a rewritten version of [i3h/tcping](https://github.com/i3h/tcping)
 - Traceroute based on a system installed mtr (not available on Windows)
 - Query basic IP information from [https://ifconfig.is](https://ifconfig.is).
 - Echo Server and Client
+- also available as docker container
 
 ## Installation
 
-Download latest release binaries from [Github](https://github.com/tommi2day/tcping2)
+Download latest release binaries from [Gitlab](https://gitlab.intern.tdressler.net/goproj/tcping2)
 or use go install
 
 ```
@@ -32,8 +33,12 @@ or Build on your own
 git clone https://github.com/tommi2day/tcping2.git
 go build
 ```
-
-# Usage
+## build Docker Container
+```
+docker build -t tcping2 -f Dockerfile .
+```
+container exposes port 8080 for echo server
+## Usage
 
 ```
 tcping2 --help
@@ -121,6 +126,7 @@ Flags:
   -p, --port string      tcp port to ping
   -t, --tcp              use TCP instead of ICMP
 
+
 #-------------------------------------------------------------
 tcping2 query --help
 Query host ip information
@@ -133,6 +139,17 @@ Flags:
   -h, --help             help for query
 #-------------------------------------------------------------
 tcping2 version
+```
+### use docker container
+docker container can be used to run tcping2 without installation. Per default it starts the echo server. 
+```bash
+docker run -d --rm -p 8080:8080 tcping2
+listening on [::]:8080, terminate with CTRL-C
+...
+echo -e "Hello\nQUIT\n"|nc localhost 8080
+Hello
+#-------------------------------------------------------------
+docker run -it --rm tcping2 tcp google.com 80 --dnsIPv4
 ```
 
 ### Note
@@ -244,26 +261,36 @@ Hop    7 192.178.71.154                                               Loss:   0.
 Hop    8 209.85.244.249                                               Loss:   0.00% Avg: 10.54ms
 Hop    9 142.250.225.77                                               Loss:   0.00% Avg:  9.75ms
 Hop   10 fra16s52-in-f14.1e100.net                                    Loss:   0.00% Avg:  9.83ms
-start echo server
+
 #-------------------------------------------------------------
 
 # start echo server
-echo --server -p 9999 --timeout 10
-listening on [::]:9999, terminate with CTRL-C
-got connection from [::1]:49916
-TCPING Server NB6.localdomain tcping2 version version 1.1.0-1 (e0de623 - 2024-04-27)
-got connection from [::1]:49916
+# `QUIT\n` terminates the server
+tcping2 echo --server -p 8080 --timeout 10
+# or use docker container, which starts without parameter the echo server (or give the full command parameters)
+docker run -it --rm -p 8080:8080 tcping2
+#connect with echo client
+tcping2 echo localhost 8080
+# server output
+listening on [::]:8080, terminate with CTRL-C
+got connection from 172.17.0.1:37806
+got  TCPING2 , client localhost tcping2 version 0.0.1-beta (d8f3af8 - 2024-04-28)
+got connection from 172.17.0.1:37806
 got quit, terminate server
+# client output
+connection to 127.0.0.1:8080 successful tested
 #-------------------------------------------------------------
-
-#connect to echo server
-tcping2 echo localhost 9999 --info
-[Sat, 27 Apr 2024 14:13:39 CEST]  INFO connected to [::1]:9999
-[Sat, 27 Apr 2024 14:13:39 CEST]  INFO send TCPING version to server
-[Sat, 27 Apr 2024 14:13:39 CEST]  INFO answered 'TCPING Server localhost.localdomain tcping2 version 1.1.0-1 (e0de623 - 2024-04-27)'
-connection to [::1]:9999 successful tested
-[Sat, 27 Apr 2024 14:13:39 CEST]  INFO Echo done
-
+#Test with echo server and nc as client
+echo -e "Hello\nQUIT\n"|nc localhost 8080
+Hello
+# server
+docker run -it --rm -p 8080:8080 tcping2
+listening on [::]:8080, terminate with CTRL-C
+got connection from 172.17.0.1:41918
+got  Hello
+got connection from 172.17.0.1:41918
+IO Timeout
+#-------------------------------------------------------------
 # echo to standard server with timeout
 tcping2 echo www.google.com:80 --timeout 3
 Error: failed to read data, err:read tcp 127.0.0.1:65324->172.217.23.100:80: i/o timeout
