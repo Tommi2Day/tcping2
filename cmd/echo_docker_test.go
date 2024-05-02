@@ -16,8 +16,8 @@ import (
 const echoContainerTimeout = 10
 
 var vendorImagePrefix = os.Getenv("VENDOR_IMAGE_PREFIX")
-var goImage = common.GetEnv("GO_IMAGE", vendorImagePrefix+"docker.io/library/golang:1.21-bullseye")
-var runtimeImage = common.GetEnv("RUNTIME_IMAGE", vendorImagePrefix+"docker.io/library/debian:bullseye")
+var goImage = common.GetEnv("GO_IMAGE", vendorImagePrefix+"docker.io/library/golang:1.22.2-bookworm")
+var runtimeImage = common.GetEnv("RUNTIME_IMAGE", vendorImagePrefix+"docker.io/library/debian:bookworm")
 var echoContainerName string
 
 // prepareEchoContainer create a Docker Container for tcping2 echo server
@@ -52,7 +52,7 @@ func prepareEchoContainer() (container *dockertest.Resource, err error) {
 		&dockertest.BuildOptions{
 			BuildArgs:  buildArgs,
 			ContextDir: dockerContextDir,
-			Dockerfile: "Dockerfile",
+			Dockerfile: "docker/image/Dockerfile",
 		},
 		&dockertest.RunOptions{
 			Hostname:     echoContainerName,
@@ -69,8 +69,14 @@ func prepareEchoContainer() (container *dockertest.Resource, err error) {
 		err = fmt.Errorf("error starting echo docker container: %v", err)
 		return
 	}
+	// wait to proceed
+	time.Sleep(10 * time.Second)
 	pool.MaxWait = echoContainerTimeout * time.Second
 	host, port := common.GetContainerHostAndPort(container, "8080/tcp")
+	if host == "" || port == 0 {
+		err = fmt.Errorf("could not get container host and port")
+		return
+	}
 	fmt.Printf("Wait to successfully connect to Echo Server to %s:%d (max %ds)...\n", host, port, echoContainerTimeout)
 	start := time.Now()
 	var c net.Conn

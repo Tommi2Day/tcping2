@@ -14,8 +14,8 @@ permissions:
 env:
   IMAGE: tcping2
   TAG: ${{ github.event.inputs.tag }}
-  GO_IMAGE: golang:1.21-bullseye
-  RUNTIME_IMAGE: debian:bullseye-slim
+  GO_IMAGE: golang:1.22-bookworm
+  RUNTIME_IMAGE: debian:bookworm
 
 jobs:
   goreleaser:
@@ -59,7 +59,7 @@ jobs:
           build-args: |
             GO_IMAGE=${{ env.GO_IMAGE }}
             RUNTIME_IMAGE=${{ env.RUNTIME_IMAGE }}
-          file: Dockerfile
+          file: docker/image/Dockerfile
           push: true
           tags: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:${{ env.TAG }}
       - name: Push latest
