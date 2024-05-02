@@ -19,8 +19,9 @@ var (
 		Use:   "tcping2",
 		Short: "tcping2 – open port probe and ip info command line tool, supporting ICMP, TCP and HTTP protocols",
 		Long: `Tcping2 is a ip probe command line tool, supporting ICMP and TCP protocols 
-      It may also run an httptrace and ip traces (using system mtr installation, but not on windows).
-      You can also use it to query IP network information from https://ifconfig.is.`,
+      It may also run an httptrace and ip traces (using system mtr installation).
+      You can also use it to query IP network information from https://ifconfig.is.
+      it has an echo server and client function to check not yet available service ports`,
 	}
 
 	debugFlag      = false

@@ -6,9 +6,8 @@
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/tommi2day/tcping2)
 [![Docker Pulls](https://img.shields.io/docker/pulls/tommi2day/tcping2.svg)](https://hub.docker.com/r/tommi2day/tcping2/)
 
-Tcping2 is an ip probe command line tool, supporting ICMP, TCP and HTTP protocols
 
-this is a rewritten version of [i3h/tcping](https://github.com/i3h/tcping)
+Tcping2 is an ip probe command line tool, supporting ICMP, TCP and HTTP protocols and echo server and client
 
 ## Features
 
