@@ -51,7 +51,7 @@ func TestEchoClient(t *testing.T) {
 
 		// start server
 		testCh := make(chan echoResult)
-		defer close(testCh)
+		// defer close(testCh)
 		go runEchoServer(echoIP, echoPort, testCh)
 		time.Sleep(1 * time.Second)
 
@@ -89,5 +89,13 @@ func TestEchoClient(t *testing.T) {
 		assert.Containsf(t, out, exp, "Echo command should contain '%s'", exp)
 		t.Logf(out)
 		_, _ = c.Write([]byte("QUIT\n"))
+		_ = c.Close()
+		select {
+		case r := <-testCh:
+			assert.NoErrorf(t, r.err, "Echo server should not return an error:%s", r.err)
+		case <-time.After(time.Duration(10) * time.Second):
+			err = fmt.Errorf("timeout waiting for server shutdown")
+			t.Log(err)
+		}
 	})
 }
