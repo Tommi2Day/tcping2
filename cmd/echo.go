@@ -55,8 +55,16 @@ func runEcho(_ *cobra.Command, args []string) error {
 			return fmt.Errorf("please specify a port to serve on")
 		}
 		ip := common.GetEnv("ECHO_SERVER", "")
-		err = runEchoServer(ip, queryPort)
-		return err
+		resCh := make(chan echoResult)
+		defer close(resCh)
+		go runEchoServer(ip, queryPort, resCh)
+		select {
+		case r := <-resCh:
+			return r.err
+		case <-time.After(time.Duration(pingTimeout) * time.Second):
+			err = fmt.Errorf("timeout")
+			return err
+		}
 	}
 	if len(args) > 0 && queryAddress == "" {
 		queryAddress = args[0]
@@ -71,36 +79,37 @@ func runEcho(_ *cobra.Command, args []string) error {
 	log.Info("Echo done")
 	return err
 }
-func runEchoServer(host, port string) (err error) {
+func runEchoServer(host, port string, resCh chan echoResult) {
 	// create a tcp listener on the given port
 	log.Debugf("try to listen on %s:%s", host, port)
-	ch := make(chan echoResult)
-	defer close(ch)
+
 	addr := net.JoinHostPort(host, port)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Errorf("failed to create listener:%s", err)
+		resCh <- echoResult{err: err, finish: true}
 		return
 	}
 	fmt.Printf("listening on %s, terminate with CTRL-C\n", listener.Addr())
-
+	ch := make(chan echoResult)
+	defer close(ch)
 	// listen for new connections
 	for {
 		conn, e := listener.Accept()
 		if e != nil {
 			err = fmt.Errorf("failed to accept connection:%s", e)
+			resCh <- echoResult{err: err, finish: true}
 			return
 		}
 
 		// pass an accepted connection to a handler goroutine
 		go handleServerConnection(conn, ch)
 		r := <-ch
-		err = r.err
 		if r.finish {
+			resCh <- r
 			break
 		}
 	}
-	return
 }
 
 // handleConnection handles the lifetime of a connection
@@ -108,7 +117,6 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 	defer func(conn net.Conn) {
 		_ = conn.Close()
 	}(conn)
-
 	log.Debugf("set connection deadline to %d seconds", pingTimeout)
 	reader := bufio.NewReader(conn)
 	version := GetVersion(false)
@@ -132,6 +140,12 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 				return
 			case strings.Contains(err.Error(), "i/o timeout"):
 				err = fmt.Errorf("IO Timeout")
+				log.Debugf(err.Error())
+				fmt.Println(err.Error())
+				ch <- echoResult{err: err, finish: false}
+				return
+			case strings.Contains(err.Error(), "wsarecv"):
+				err = fmt.Errorf("connection closed by client")
 				log.Debugf(err.Error())
 				fmt.Println(err.Error())
 				ch <- echoResult{err: err, finish: false}

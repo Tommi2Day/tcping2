@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ory/dockertest/v3"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
@@ -19,13 +18,12 @@ import (
 var echoPort = common.GetEnv("ECHO_PORT", "39207")
 var echoHost = common.GetEnv("ECHO_HOST", "127.0.0.1")
 var echoIP = common.GetEnv("ECHO_SERVER", "0.0.0.0")
-var echoContainer *dockertest.Resource
 
 func TestEchoClient(t *testing.T) {
 	var err error
 	var out string
 	test.InitTestDirs()
-	echoContainer, err = prepareEchoContainer()
+
 	if err != nil {
 		log.Fatalf("prepareEchoContainer failed: %s", err)
 	}
@@ -50,11 +48,15 @@ func TestEchoClient(t *testing.T) {
 		if os.Getenv("SKIP_ECHO_SERVER") != "" {
 			t.Skip("Skipping Echo Server tests")
 		}
-		go func() {
-			_ = runEchoServer(echoIP, "39201")
-		}()
+
+		// start server
+		testCh := make(chan echoResult)
+		defer close(testCh)
+		go runEchoServer(echoIP, echoPort, testCh)
 		time.Sleep(1 * time.Second)
-		c, e := net.Dial("tcp", echoIP+":39201")
+
+		// test server
+		c, e := net.Dial("tcp", echoIP+":"+echoPort)
 		_ = c.SetDeadline(time.Now().Add(3 * time.Second))
 		assert.NoErrorf(t, e, "Echo server should not return an error:%s", e)
 		testEcho := []byte("TEST TCPING\n")
@@ -62,10 +64,8 @@ func TestEchoClient(t *testing.T) {
 		r := bufio.NewReader(c)
 		answer, _ := r.ReadBytes('\n')
 		assert.Equal(t, testEcho, answer, "Echo server should return the same message")
-		_, _ = c.Write([]byte("QUIT\n"))
-	})
 
-	t.Run("connect echo server", func(t *testing.T) {
+		// run client
 		if os.Getenv("SKIP_ECHO_CONTAINER") != "" {
 			t.Skip("Skipping Echo Server tests")
 		}
@@ -79,6 +79,7 @@ func TestEchoClient(t *testing.T) {
 			"--server=false",
 			"--unit-test",
 			"--debug",
+			"--timeout", "10",
 		}
 
 		out, err = common.CmdRun(RootCmd, args)
@@ -87,6 +88,6 @@ func TestEchoClient(t *testing.T) {
 		exp := fmt.Sprintf("is %s", echoPrefix)
 		assert.Containsf(t, out, exp, "Echo command should contain '%s'", exp)
 		t.Logf(out)
+		_, _ = c.Write([]byte("QUIT\n"))
 	})
-	destroyEchoContainer(echoContainer)
 }
