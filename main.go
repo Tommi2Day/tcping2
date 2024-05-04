@@ -2,7 +2,7 @@
 package main
 
 import (
-	"tcping2/cmd"
+	"github.com/tommi2day/tcping2/cmd"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module tcping2
+module github.com/tommi2day/tcping2
 
 go 1.22
 

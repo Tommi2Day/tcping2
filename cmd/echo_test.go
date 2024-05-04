@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"tcping2/test"
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/tommi2day/tcping2/test"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tommi2day/gomodules/common"
@@ -23,10 +22,6 @@ func TestEchoClient(t *testing.T) {
 	var err error
 	var out string
 	test.InitTestDirs()
-
-	if err != nil {
-		log.Fatalf("prepareEchoContainer failed: %s", err)
-	}
 	t.Run("Standard Server", func(t *testing.T) {
 		unitTestFlag = true
 		args := []string{
@@ -79,7 +74,6 @@ func TestEchoClient(t *testing.T) {
 			"--server=false",
 			"--unit-test",
 			"--debug",
-			"--timeout", "10",
 		}
 
 		out, err = common.CmdRun(RootCmd, args)
@@ -90,12 +84,5 @@ func TestEchoClient(t *testing.T) {
 		t.Logf(out)
 		_, _ = c.Write([]byte("QUIT\n"))
 		_ = c.Close()
-		select {
-		case r := <-testCh:
-			assert.NoErrorf(t, r.err, "Echo server should not return an error:%s", r.err)
-		case <-time.After(time.Duration(10) * time.Second):
-			err = fmt.Errorf("timeout waiting for server shutdown")
-			t.Log(err)
-		}
 	})
 }

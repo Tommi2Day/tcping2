@@ -5,7 +5,7 @@ import (
 
 	"github.com/tommi2day/gomodules/common"
 
-	"tcping2/test"
+	"github.com/tommi2day/tcping2/test"
 
 	"github.com/stretchr/testify/assert"
 )
