@@ -29,16 +29,20 @@ and can act as Server or client`,
 
 const echoPrefix = "TCPING2"
 const echoQuit = "QUIT"
+const serverTimeout = 60
 
 type echoResult struct {
 	err    error
 	finish bool
 }
 
+var echoTimeout = 60
+
 func init() {
 	echoCmd.Flags().StringVarP(&queryAddress, "address", "a", "", "ip/host to contact")
 	echoCmd.Flags().StringVarP(&queryPort, "port", "p", "", "tcp port to contact/serve")
 	echoCmd.Flags().IntVarP(&pingTimeout, "timeout", "t", pingTimeout, "Echo Timeout in sec")
+	echoCmd.Flags().IntVarP(&echoTimeout, "server-timeout", "T", echoTimeout, "Echo Server Timeout in sec")
 	echoCmd.Flags().BoolVarP(&echoServer, "server", "s", false, "Run as echo server")
 	RootCmd.AddCommand(echoCmd)
 }
@@ -54,6 +58,10 @@ func runEcho(_ *cobra.Command, args []string) error {
 		if queryPort == "" {
 			return fmt.Errorf("please specify a port to serve on")
 		}
+		if echoTimeout < serverTimeout {
+			echoTimeout = serverTimeout
+		}
+		log.Debugf("set server timeout to %d seconds", echoTimeout)
 		ip := common.GetEnv("ECHO_SERVER", "")
 		resCh := make(chan echoResult)
 		defer close(resCh)
@@ -61,7 +69,7 @@ func runEcho(_ *cobra.Command, args []string) error {
 		select {
 		case r := <-resCh:
 			return r.err
-		case <-time.After(time.Duration(pingTimeout) * time.Second):
+		case <-time.After(time.Duration(echoTimeout) * time.Second):
 			err = fmt.Errorf("timeout")
 			return err
 		}
@@ -117,19 +125,18 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 	defer func(conn net.Conn) {
 		_ = conn.Close()
 	}(conn)
-	log.Debugf("set connection deadline to %d seconds", pingTimeout)
 	reader := bufio.NewReader(conn)
 	version := GetVersion(false)
 	servername := common.GetHostname()
-
+	remote := conn.RemoteAddr().String()
+	msg := fmt.Sprintf("got connection from %s", remote)
+	log.Infof(msg)
+	fmt.Println(msg)
+	log.Debugf("set server connection deadline to %d seconds", pingTimeout)
 	for {
 		// read client request data
 		_ = conn.SetDeadline(time.Now().Add(time.Duration(pingTimeout) * time.Second))
-		remote := conn.RemoteAddr().String()
-		msg := fmt.Sprintf("got connection from %s", remote)
-		log.Infof(msg)
-		fmt.Println(msg)
-		time.Sleep(1 * time.Second)
+		time.Sleep(200 * time.Millisecond)
 		bytes, err := reader.ReadBytes(byte('\n'))
 		if err != nil {
 			switch {
@@ -139,7 +146,7 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 				ch <- echoResult{err: err, finish: false}
 				return
 			case strings.Contains(err.Error(), "i/o timeout"):
-				err = fmt.Errorf("IO Timeout")
+				err = fmt.Errorf("IO Timeout on server")
 				log.Debugf(err.Error())
 				fmt.Println(err.Error())
 				ch <- echoResult{err: err, finish: false}
@@ -151,7 +158,7 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 				ch <- echoResult{err: err, finish: false}
 				return
 			default:
-				err = fmt.Errorf("failed to read data, err:%s", err)
+				err = fmt.Errorf("failed to read data from client, err:%s", err)
 				log.Debugf("%s, terminate", err)
 				ch <- echoResult{err: err, finish: true}
 				return
@@ -210,9 +217,9 @@ func runClient() (err error) {
 	addr := net.JoinHostPort(ip, queryPort)
 
 	// create a context with a timeout
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pingTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(echoTimeout)*time.Second)
 	defer cancel()
-	log.Debugf("set context timeout to %d seconds", pingTimeout)
+	log.Debugf("set client timeout to %d seconds", echoTimeout)
 
 	// create a tcp connection to the server
 	log.Debugf("connecting to %s", addr)
@@ -227,8 +234,10 @@ func runClient() (err error) {
 		_ = conn.Close()
 	}(conn)
 
-	// set a deadline for the connection read/write operations
-	_ = conn.SetDeadline(time.Now().Add(time.Duration(pingTimeout) * time.Second))
+	// set a deadline for the connection read/write operations double
+	dl := pingTimeout * 2
+	log.Debugf("double connection timeout to %d seconds", dl)
+	_ = conn.SetDeadline(time.Now().Add(time.Duration(dl) * time.Second))
 
 	// send the TCPING message to the server
 	log.Infof("send %s version to server", echoPrefix)
@@ -253,7 +262,7 @@ func runClient() (err error) {
 			fmt.Printf("connection to %s successful tested\n", addr)
 			return
 		}
-		err = fmt.Errorf("failed to read data, err:%s", err)
+		err = fmt.Errorf("failed to read data from server, err:%s", err)
 		return
 	}
 	msg = strings.TrimSuffix(string(line), "\n")
