@@ -74,11 +74,12 @@ Usage:
   tcping2 echo [flags]
 
 Flags:
-  -a, --address string   ip/host to contact
-  -h, --help             help for echo
-  -p, --port string      tcp port to contact/serve
-  -s, --server           Run as echo server
-  -t, --timeout int      Echo Timeout in sec (default 3)
+  -a, --address string       ip/host to contact
+  -h, --help                 help for echo
+  -p, --port string          tcp port to contact/serve
+  -s, --server               Run as echo server
+  -T, --server-timeout int   Echo Server Timeout in sec (default 60)
+  -t, --timeout int          Echo Timeout in sec (default 3)
 #-------------------------------------------------------------
 tcping2 http --help
 Run httptrace to the target
