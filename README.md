@@ -21,7 +21,7 @@ Tcping2 is an ip probe command line tool, supporting ICMP, TCP and HTTP protocol
 
 ## Installation
 
-Download latest release binaries from [Github](https://github.com/Tommi2Day/tcping2)
+Download latest release binaries from [Github Releases](https://github.com/Tommi2Day/tcping2/releases)
 or use released Docker Container on [Dockerhub](https://hub.docker.com/r/tommi2day/tcping2)
 ```
 docker pull tommi2day/tcping2
