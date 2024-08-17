@@ -25,7 +25,7 @@ func TestTCPPing(t *testing.T) {
 		assert.NotEmpty(t, out, "TCP command should not return an empty string")
 		assert.Contains(t, out, " OPEN", "TCP command should contain OPEN")
 		assert.Containsf(t, out, "TCPing done", "Query command should contain TCPing done")
-		t.Logf(out)
+		t.Log(out)
 	})
 }
 
@@ -48,6 +48,6 @@ func TestICMPPing(t *testing.T) {
 		assert.NotEmpty(t, out, "ICMP command should not return an empty string")
 		assert.Contains(t, out, " OPEN", "ICMP command should contain OPEN")
 		assert.Containsf(t, out, "ICMPing done", "ICMP command should contain ICMPPing done")
-		t.Logf(out)
+		t.Log(out)
 	})
 }

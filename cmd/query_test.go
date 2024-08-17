@@ -25,6 +25,6 @@ func TestQueryInfo(t *testing.T) {
 		assert.NoErrorf(t, err, "Query command should not return an error:%s", err)
 		assert.NotEmpty(t, out, "Query command should not return an empty string")
 		assert.Containsf(t, out, "Query done", "Query command should contain Query done")
-		t.Logf(out)
+		t.Log(out)
 	})
 }

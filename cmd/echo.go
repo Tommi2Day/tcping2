@@ -130,7 +130,7 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 	servername := common.GetHostname()
 	remote := conn.RemoteAddr().String()
 	msg := fmt.Sprintf("got connection from %s", remote)
-	log.Infof(msg)
+	log.Info(msg)
 	fmt.Println(msg)
 	log.Debugf("set server connection deadline to %d seconds", pingTimeout)
 	for {
@@ -141,19 +141,19 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 		if err != nil {
 			switch {
 			case err == io.EOF:
-				log.Debugf("EOF")
+				log.Debug("EOF")
 				fmt.Println("No Data from client")
 				ch <- echoResult{err: err, finish: false}
 				return
 			case strings.Contains(err.Error(), "i/o timeout"):
 				err = fmt.Errorf("IO Timeout on server")
-				log.Debugf(err.Error())
+				log.Debug(err.Error())
 				fmt.Println(err.Error())
 				ch <- echoResult{err: err, finish: false}
 				return
 			case strings.Contains(err.Error(), "wsarecv"):
 				err = fmt.Errorf("connection closed by client")
-				log.Debugf(err.Error())
+				log.Debug(err.Error())
 				fmt.Println(err.Error())
 				ch <- echoResult{err: err, finish: false}
 				return

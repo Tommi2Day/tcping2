@@ -123,6 +123,6 @@ func TestMTR(t *testing.T) {
 		assert.NoErrorf(t, err, "mtr command should not return an error:%s", err)
 		assert.NotEmpty(t, out, "mtr command should not return an empty string")
 		assert.Containsf(t, out, "MTR done", "MTR command should contain MTR done")
-		t.Logf(out)
+		t.Log(out)
 	})
 }

@@ -24,6 +24,6 @@ func TestHTTPing(t *testing.T) {
 		assert.NotEmpty(t, out, "HTTP command should not return an empty string")
 		assert.Containsf(t, out, "HTTPing done", "HTTP command should contain HTTPing done")
 		assert.Contains(t, out, " OK", "HTTP command should contain OK")
-		t.Logf(out)
+		t.Log(out)
 	})
 }

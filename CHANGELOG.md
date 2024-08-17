@@ -1,4 +1,9 @@
 # tcping2
+
+## [1.1.3 - 2024-08-17]
+- update dependencies
+- fix new linter issues
+
 ## [1.1.2 - 2024-05-04]
 - move to golang 1.22
 - update dependencies

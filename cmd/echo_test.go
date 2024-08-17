@@ -36,7 +36,7 @@ func TestEchoClient(t *testing.T) {
 		assert.NoErrorf(t, err, "Echo command should not return an error:%s", err)
 		assert.NotEmpty(t, out, "Echo command should not return an empty string")
 		assert.Contains(t, out, "but connected", "Echo command should contain 'but connected'")
-		t.Logf(out)
+		t.Log(out)
 	})
 
 	t.Run("create Echo Server", func(t *testing.T) {
@@ -81,7 +81,7 @@ func TestEchoClient(t *testing.T) {
 		assert.NotEmpty(t, out, "Echo command should not return an empty string")
 		exp := fmt.Sprintf("is %s", echoPrefix)
 		assert.Containsf(t, out, exp, "Echo command should contain '%s'", exp)
-		t.Logf(out)
+		t.Log(out)
 		_, _ = c.Write([]byte("QUIT\n"))
 		_ = c.Close()
 	})

@@ -18,7 +18,7 @@ func TestVersion(t *testing.T) {
 		actual := GetVersion(false)
 		assert.NotEmpty(t, actual, "GetVersion should not be empty")
 		assert.Containsf(t, actual, configName, "GetVersion should contain %s", configName)
-		t.Logf(actual)
+		t.Log(actual)
 	})
 	t.Run("Version cmd", func(t *testing.T) {
 		args := []string{
@@ -30,6 +30,6 @@ func TestVersion(t *testing.T) {
 		assert.NoErrorf(t, err, "version command should not return an error:%s", err)
 		assert.NotEmpty(t, out, "version command should not return an empty string")
 		assert.Containsf(t, out, configName, "version command should contain %s", configName)
-		t.Logf(out)
+		t.Log(out)
 	})
 }
