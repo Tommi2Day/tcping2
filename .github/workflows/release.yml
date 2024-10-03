@@ -14,7 +14,7 @@ permissions:
 env:
   IMAGE: tcping2
   TAG: ${{ github.event.inputs.tag }}
-  GO_IMAGE: golang:1.22-bookworm
+  GO_IMAGE: golang:1.23-bookworm
   RUNTIME_IMAGE: debian:bookworm
 
 jobs:
@@ -31,10 +31,10 @@ jobs:
         with:
           go-version-file: "go.mod"
           check-latest: true
-      - uses: goreleaser/goreleaser-action@v5
+      - uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
-          version: latest
+          version: "~> v2"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_TOKEN }}

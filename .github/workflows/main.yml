@@ -1,8 +1,7 @@
 name: CI
 
 on: [push]
-
-jobs:
+obs:
   test:
     runs-on: ubuntu-latest
     steps:
@@ -23,10 +22,9 @@ jobs:
           SKIP_ICMP: "true"
           # SKIP_ECHO_SERVER: "true"
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: Tommi2Day/tcping2
+        uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   lint:
     runs-on: "ubuntu-latest"
@@ -37,9 +35,8 @@ jobs:
         with:
           go-version-file: "go.mod"
           check-latest: true
-          # cache: false
-      - uses: "golangci/golangci-lint-action@v4"
+      - uses: "golangci/golangci-lint-action@v6"
         with:
-          version: "latest"
+          version: "v1.60.1"
           args: --timeout=10m
-          skip-cache: false
+          skip-cache: true
