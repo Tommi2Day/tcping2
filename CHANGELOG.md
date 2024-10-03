@@ -1,5 +1,11 @@
 # tcping2
 
+## [1.1.4 - 2024-10-03]
+- add arm64 target
+- use Go1.23
+- use Goreleaser V2 and v6 GitHub Action
+- update dependencies
+
 ## [1.1.3 - 2024-08-18]
 - update dependencies
 - fix new linter issues
