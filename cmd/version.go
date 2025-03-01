@@ -36,7 +36,7 @@ func init() {
 }
 
 // GetVersion extract compiled version info
-func GetVersion(print bool) (txt string) {
+func GetVersion(doPrint bool) (txt string) {
 	name := Name
 	commit := Commit
 	version := Version
@@ -46,7 +46,7 @@ func GetVersion(print bool) (txt string) {
 		date = currentTime.Format("2006-01-02 15:04:05")
 	}
 	txt = fmt.Sprintf("%s version %s (%s - %s)", name, version, commit, date)
-	if print {
+	if doPrint {
 		fmt.Println(txt)
 	}
 	return

@@ -1,5 +1,10 @@
 # tcping2
 
+## [1.1.5 - 2025-03-01]
+- add darwin_arm64 build
+- update dependencies
+- fix linter issue in version
+
 ## [1.1.4 - 2024-10-03]
 - add arm64 target
 - use Go1.23

@@ -30,6 +30,7 @@ func TestEchoClient(t *testing.T) {
 			"-p", "",
 			"--server=false",
 			"--unit-test",
+			"--dnsIPv4",
 			"--debug",
 		}
 		out, err = common.CmdRun(RootCmd, args)
