@@ -1,5 +1,10 @@
 # tcping2
 
+## [1.1.6 - 2025-03-01]
+- update dependencies
+- use Go1.25
+- update workflow actions
+
 ## [1.1.5 - 2025-03-01]
 - add darwin_arm64 build
 - update dependencies

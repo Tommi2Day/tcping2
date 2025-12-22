@@ -5,12 +5,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version-file: "go.mod"
-          check-latest: true
+          go-version: stable
       - name: Install dependencies
         run: |
           go mod tidy
@@ -22,21 +21,20 @@ jobs:
           SKIP_ICMP: "true"
           # SKIP_ECHO_SERVER: "true"
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   lint:
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version-file: "go.mod"
-          check-latest: true
-      - uses: "golangci/golangci-lint-action@v6"
+          go-version: stable
+      - uses: golangci/golangci-lint-action@v9
         with:
-          version: "v1.60.1"
+          version: "v2.7.2"
           args: --timeout=10m
           skip-cache: true
