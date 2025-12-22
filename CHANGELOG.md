@@ -1,6 +1,6 @@
 # tcping2
 
-## [1.1.6 - 2025-03-01]
+## [1.1.6 - 2025-12-22]
 - update dependencies
 - use Go1.25
 - update workflow actions
