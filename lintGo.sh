@@ -1,9 +1,7 @@
 #!/bin/bash
 if golangci-lint \
 	run ./... \
-	--timeout=5m \
-	--out-format colored-line-number \
-	--exclude-dirs-use-default; then
+	--timeout=5m ; then
 	echo "OK"
 else
 	echo "FAIL"
