@@ -21,16 +21,15 @@ jobs:
   goreleaser:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - run: git fetch --force --tags
       - run: git tag ${{ github.event.inputs.tag }}
       - run: git push origin ${{ github.event.inputs.tag }}
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
-          go-version-file: "go.mod"
-          check-latest: true
+          go-version: stable
       - uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
@@ -42,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
