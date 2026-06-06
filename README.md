@@ -14,10 +14,27 @@ Tcping2 is an ip probe command line tool, supporting ICMP, TCP and HTTP protocol
 - Support ICMP/TCP protocols
 - Support resolving hostnames to IPv4/IPv6 addresses or IPv4 Only
 - HTTPTrace
+- TLS connection validation and certificate inspection (STARTTLS, custom trust stores, weak algorithm detection)
 - Traceroute based on a system installed mtr (not available on Windows)
 - Query basic IP information from [https://ifconfig.is](https://ifconfig.is).
 - Echo Server and Client
 - also available as docker container
+
+## Contents
+
+- [Installation](#installation)
+- [Global flags](#global-flags)
+- [icmp — Ping using ICMP protocol](#icmp--ping-using-icmp-protocol)
+- [tcp — Ping using TCP protocol](#tcp--ping-using-tcp-protocol)
+- [http — HTTP trace](#http--http-trace)
+- [tls — Validate TLS connection or certificate](#tls--validate-tls-connection-or-certificate)
+- [mtr — Traceroute using MTR](#mtr--traceroute-using-mtr)
+- [query — Query host IP information](#query--query-host-ip-information)
+- [echo — Echo server and client](#echo--echo-server-and-client)
+- [version — Print version information](#version--print-version-information)
+- [Credits](#credits)
+
+---
 
 ## Installation
 
@@ -26,169 +43,107 @@ or use released Docker Container on [Dockerhub](https://hub.docker.com/r/tommi2d
 ```
 docker pull tommi2day/tcping2
 ```
-or build docker container for yourself
+## build Docker Container
 ```
 docker build -t tcping2 -f Dockerfile .
 ```
 container exposes port 8080 for echo server
 
-or Build on your own
-```
-git clone https://github.com/tommi2day/tcping2.git
-go build
-``` 
-## Usage
+---
 
-```
-tcping2 --help
-  Usage:
-  tcping2 [command]
+## Global flags
 
-Available Commands:
-  completion  Generate the autocompletion script for the specified shell
-  echo        try echo using TCP protocol
-  help        Help about any command
-  http        Ping using HTTP protocol
-  icmp        Ping using ICMP protocol
-  mtr         Traceroute using MTR
-  query       Query host ip information
-  tcp         Ping using TCP protocol
-  version     version print version string
+These flags apply to every command:
 
-Flags:
-      --debug              verbose debug output
-      --dnsIPv4            return only IPv4 Addresses from DNS Server
-      --dnsPort int        DNS Server Port Address
-      --dnsServer string   DNS Server IP Address to query
-      --dnsTCP             Query DNS with TCP instead of UDP
-      --dnsTimeout int     DNS Timeout in sec
-  -h, --help               help for tcping2
-      --info               reduced info output
-      --no-color           disable colored log output
-      --unit-test          redirect output for unit tests
+| Flag | Description |
+|------|-------------|
+| `--debug` | Verbose debug output |
+| `--info` | Reduced info output |
+| `--no-color` | Disable colored log output |
+| `--dnsIPv4` | Return only IPv4 addresses from DNS |
+| `--dnsServer string` | DNS server IP address to query |
+| `--dnsPort int` | DNS server port |
+| `--dnsTCP` | Query DNS with TCP instead of UDP |
+| `--dnsTimeout int` | DNS timeout in seconds |
 
-Use "tcping2 [command] --help" for more information about a command.
-#-------------------------------------------------------------
-tcping2 echo --help
-Usage:
-  tcping2 echo [flags]
+---
 
-Flags:
-  -a, --address string       ip/host to contact
-  -h, --help                 help for echo
-  -p, --port string          tcp port to contact/serve
-  -s, --server               Run as echo server
-  -T, --server-timeout int   Echo Server Timeout in sec (default 60)
-  -t, --timeout int          Echo Timeout in sec (default 3)
-#-------------------------------------------------------------
-tcping2 http --help
-Run httptrace to the target
+## icmp — Ping using ICMP protocol
 
-Usage:
-  tcping2 http [flags]
-
-Flags:
-  -a, --address string   URL to query
-  -h, --help             help for http
-#-------------------------------------------------------------
-tcping2 icmp --help
-Ping using ICMP protocol
-
-Usage:
-  tcping2 icmp [flags]
-
-Flags:
-  -a, --address string   ip/host to query
-  -h, --help             help for icmp
-#-------------------------------------------------------------
-tcping2 tcp --help
-Ping using TCP protocol
-
-Usage:
-  tcping2 tcp [flags]
-
-Flags:
-  -a, --address string   ip/host to ping
-  -h, --help             help for tcp
-  -p, --port string      tcp port to ping
-  -t, --timeout int      Ping Timeout in sec (default 3)
-#-------------------------------------------------------------
-tcping2 mtr --help
-Traceroute using MTR
-
-Usage:
-  tcping2 mtr [flags]
-
-Flags:
-  -a, --address string   ip/host to ping
-  -h, --help             help for mtr
-  -m, --mtr string       mtr binary path or use MTR_BIN env var (default "mtr")
-  -p, --port string      tcp port to ping
-  -t, --tcp              use TCP instead of ICMP
-
-
-#-------------------------------------------------------------
-tcping2 query --help
-Query host ip information
-
-Usage:
-  tcping2 query [flags]
-
-Flags:
-  -a, --address string   ip/host to query
-  -h, --help             help for query
-#-------------------------------------------------------------
-tcping2 version
-```
-### use docker container
-docker container can be used to run tcping2 without installation. Per default it starts the echo server. 
-```bash
-docker run -d --rm -p 8080:8080 tommi2day/tcping2
-listening on [::]:8080, terminate with CTRL-C
-...
-echo -e "Hello\nQUIT\n"|nc localhost 8080
-Hello
-#-------------------------------------------------------------
-docker run -it --rm tommi2day/tcping2 tcp google.com 80 --dnsIPv4
+```sh
+tcping2 icmp [--address <host>] [global flags]
 ```
 
-### Note
+> **Note:** Root permission is required (raw socket). Use `sudo` or set the setuid bit on the binary.
 
-Root permission is required when running ICMP ping or MTR, since it needs to open raw socket.
-You can either use sudo command, or set setuid bit for tcping2.
+| Flag | Description |
+|------|-------------|
+| `-a, --address string` | IP/host to ping |
 
-## Examples
+**Examples:**
 
-```bash
-# ping google.com (ipv4 only)
-sudo tcping2 icmp google.com --dnsIPv4
+```sh
+# Ping google.com (IPv4 only)
+sudo tcping2 icmp -a google.com --dnsIPv4
 ICMP   OPEN      74.125.133.138    16.9 ms
 ICMP   OPEN      74.125.133.101    16.9 ms
 ICMP   OPEN      74.125.133.100    17.1 ms
-ICMP   OPEN      74.125.133.102    16.7 ms
-ICMP   OPEN      74.125.133.113    16.7 ms
-ICMP   OPEN      74.125.133.139    16.8 ms
-#-------------------------------------------------------------
-tcping2 icmp -a google.com
+
+# Ping google.com (IPv4 + IPv6)
+sudo tcping2 icmp -a google.com
 ICMP   OPEN      142.250.185.238    10.3 ms
 ICMP   ERROR     2a00:1450:4001:82f::200e
-#-------------------------------------------------------------
-# ping google.com  with port given (mandantory)
-tcping2 tcp google.com 80 --dnsIPv4 # or
-tcping2 tcp -a google.com -p 80 --dnsIPv4 # or
+```
+
+---
+
+## tcp — Ping using TCP protocol
+
+```sh
+tcping2 tcp [--address <host>] [--port <port>] [global flags]
+```
+
+The address and port can be given as positional arguments, as `host:port` in `--address`, or as separate flags.
+
+| Flag | Description |
+|------|-------------|
+| `-a, --address string` | IP/host to ping (also accepts `host:port`) |
+| `-p, --port string` | TCP port to ping |
+| `-t, --timeout int` | Ping timeout in seconds (default 3) |
+
+**Examples:**
+
+```sh
+# Equivalent forms
+tcping2 tcp google.com 80 --dnsIPv4
+tcping2 tcp -a google.com -p 80 --dnsIPv4
 tcping2 tcp -a google.com:80 --dnsIPv4
 TCP    OPEN      173.194.76.102:80
 TCP    OPEN      173.194.76.138:80
-TCP    OPEN      173.194.76.101:80
-TCP    OPEN      173.194.76.139:80
-TCP    OPEN      173.194.76.100:80
-TCP    OPEN      173.194.76.113:80
-#-------------------------------------------------------------
+
+# With IPv6 result
 tcping2 tcp -a google.com -p 443
 TCP    OPEN      142.250.185.238:443
 TCP    ERROR: dial tcp [2a00:1450:4001:82f::200e]:443: connect: network is unreachable
-#-------------------------------------------------------------
-# http trace google.com
+```
+
+---
+
+## http — HTTP trace
+
+```sh
+tcping2 http --address <url> [global flags]
+```
+
+Runs an HTTP trace showing DNS lookup, TCP, TLS, processing, and transfer times.
+
+| Flag | Description |
+|------|-------------|
+| `-a, --address string` | URL to trace |
+
+**Examples:**
+
+```sh
 tcping2 http -a google.com
 URL       :    https://google.com
 Proxy     :    false
@@ -201,8 +156,177 @@ TLS       :    21.84 ms
 Process   :    50.68 ms
 Transfer  :    0.11 ms
 Total     :    116.56 ms
-#-------------------------------------------------------------
-# query ip informations for google.com
+```
+
+---
+
+## tls — Validate TLS connection or certificate
+
+### Validate a connection
+
+```sh
+tcping2 tls [--address <host>] [--port <port>] [--rootca <path>] [--starttls <proto>] [global flags]
+```
+
+Connects to the server and validates the TLS certificate chain. Uses the system trust store by default. On success it shows the expiry date; on failure it prints the exact reason.
+
+| Flag | Description |
+|------|-------------|
+| `-a, --address string` | Host (or `host:port`) to connect to |
+| `-p, --port int` | TCP port (default `443`) |
+| `-r, --rootca string` | Additional trust source: PEM file, directory of PEM/CRT files, Java JKS trust store (`.jks`), or PKCS12 bundle (`.p12`/`.pfx`) |
+| `--starttls string` | Upgrade via STARTTLS before TLS handshake: `smtp`, `imap`, `pop3`, `ftp` |
+| `-f, --certfile string` | Validate a local certificate file (PEM or DER) instead of connecting |
+| `-t, --timeout int` | Connection timeout in seconds (default `5`) |
+
+**Examples:**
+
+```sh
+# Validate a public HTTPS server
+tcping2 tls -a example.com
+TLS    VALID     example.com:443  (expires 2026-10-01, 117 days)
+
+# Invalid / expired certificate
+tcping2 tls -a expired.badssl.com
+TLS    INVALID   expired.badssl.com:443
+      REASON    x509: certificate has expired or is not yet valid: ...
+
+# SMTP with STARTTLS
+tcping2 tls -a smtp.gmail.com -p 587 --starttls smtp
+TLS    VALID     smtp.gmail.com:587  (expires 2026-08-10, 65 days)
+
+# IMAP with STARTTLS
+tcping2 tls -a imap.gmail.com -p 143 --starttls imap
+TLS    VALID     imap.gmail.com:143  (expires 2026-08-10, 65 days)
+
+# Custom CA (PEM file)
+tcping2 tls -a internal.host -r /etc/ssl/company-ca.pem
+
+# Custom CA (directory of PEM/CRT files)
+tcping2 tls -a internal.host -r /etc/ssl/company-certs/
+
+# Java JKS trust store
+tcping2 tls -a internal.host -r /opt/jdk/lib/security/cacerts.jks
+
+# PKCS12 trust store
+tcping2 tls -a internal.host -r bundle.p12
+
+# Local certificate file — checks validity and expiry
+tcping2 tls -f /path/to/server.pem
+TLS    VALID     /path/to/server.pem  (expires 2026-10-01, 117 days)
+
+# Weak signature algorithm warning (SHA-1)
+tcping2 tls -f /path/to/old-cert.pem
+TLS    VALID     /path/to/old-cert.pem  (expires 2026-10-01, 117 days)
+       WARN      /path/to/old-cert.pem uses a weak signature algorithm (SHA1-RSA)
+```
+
+### Show certificate details
+
+```sh
+tcping2 tls show [--address <host>] [--port <port>] [--chain] [--starttls <proto>] [global flags]
+```
+
+Connects and prints the leaf certificate's subject, issuer, signature algorithm, SANs, and validity window. Use `--chain` to display every certificate in the peer chain.
+
+| Flag | Description |
+|------|-------------|
+| `-a, --address string` | Host (or `host:port`) to connect to |
+| `-p, --port int` | TCP port (default `443`) |
+| `-r, --rootca string` | Additional trust source (same as `tls`) |
+| `--starttls string` | STARTTLS protocol (same as `tls`) |
+| `--chain` | Show the full certificate chain |
+| `-t, --timeout int` | Connection timeout in seconds (default `5`) |
+
+**Examples:**
+
+```sh
+tcping2 tls show -a www.google.com
+TLS    CERT      www.google.com:443
+  Subject:       CN=www.google.com
+  Issuer:        CN=WE2,O=Google Trust Services,C=US
+  Signature:     ECDSA-SHA256
+  Not Before:    2026-05-18 18:38:16 UTC
+  Not After:     2026-08-10 18:38:15 UTC  (65 days)
+  SANs:          www.google.com
+  Serial:        f666bd12cd02a3cb / SN 327523536107629...
+
+tcping2 tls show -a www.google.com --chain
+TLS    CERT      www.google.com:443
+  Subject:       CN=www.google.com
+  ...
+  Chain[1]:
+    Subject:       CN=WE2,O=Google Trust Services,C=US
+    Signature:     ECDSA-SHA384
+    Not After:     2029-02-20 14:00:00 UTC  (990 days)
+    ...
+  Chain[2]:
+    Subject:       CN=GTS Root R4,O=Google Trust Services LLC,C=US
+    Signature:     SHA256-RSA
+    ...
+
+# SHA-1 certificate flagged in show output
+tcping2 tls show -a legacy.example.com
+TLS    CERT      legacy.example.com:443
+  Subject:       CN=legacy.example.com
+  Signature:     SHA1-RSA  [WEAK]
+  ...
+```
+
+---
+
+## mtr — Traceroute using MTR
+
+```sh
+tcping2 mtr --address <host> [--tcp] [--port <port>] [global flags]
+```
+
+Runs a traceroute via the system-installed `mtr` binary. Not available on Windows.
+
+> **Note:** Root permission is required for ICMP mode. Use `sudo` or set the setuid bit on the binary.
+
+| Flag | Description |
+|------|-------------|
+| `-a, --address string` | IP/host to trace |
+| `-p, --port string` | TCP port (used with `--tcp`) |
+| `-t, --tcp` | Use TCP instead of ICMP |
+| `-m, --mtr string` | Path to `mtr` binary, or set `MTR_BIN` env var (default `mtr`) |
+
+**Examples:**
+
+```sh
+# ICMP trace to google.com
+sudo tcping2 mtr -a google.com
+Waiting for MTR results to 142.250.184.238 ...
+Hop    1 192.168.0.22                   Loss:   0.00% Avg:  0.54
+Hop    2 192.168.0.1                    Loss:   0.00% Avg:  1.19
+Hop    3 ...                            Loss:   0.00% Avg:  1.66
+Hop    9 fra02s19-in-f14.1e100.net      Loss:   0.00% Avg:  9.61
+
+# TCP trace (IPv4 only)
+tcping2 mtr -a https://google.com -t --dnsIPv4
+Waiting for MTR results to 142.250.185.206:443 ...
+Hop    1 192.168.0.22                   Loss:   0.00% Avg:  0.54
+Hop   10 fra16s52-in-f14.1e100.net      Loss:   0.00% Avg:  9.83ms
+```
+
+---
+
+## query — Query host IP information
+
+```sh
+tcping2 query --address <host> [global flags]
+```
+
+Queries basic IP geolocation and ASN information from [https://ifconfig.is](https://ifconfig.is).
+
+| Flag | Description |
+|------|-------------|
+| `-a, --address string` | IP/host to query |
+
+**Examples:**
+
+```sh
 tcping2 query -a google.com
 IP       :    173.194.76.139
 Continent:    North America
@@ -213,88 +337,69 @@ Longitude:    -122.084000
 ASN      :    15169
 ORG      :    Google LLC
 
-IP       :    173.194.76.138
-Continent:    North America
-Country  :    United States
-City     :    Mountain View
-Latitude :    37.422000
-Longitude:    -122.084000
-ASN      :    15169
-ORG      :    Google LLC
-....
 IP       :    2a00:1450:400c:c06::8b
 Continent:    Europe
 Country  :    Belgium
 City     :    Brussels
-Latitude :    50.850300
-Longitude:    4.351710
 ASN      :    15169
 ORG      :    Google LLC
-#-------------------------------------------------------------
-
-# run ip icmp trace to google.com
-sudo tcping2 mtr -a google.com
-Waiting for MTR results to 142.250.184.238 ...
-Hop    1 192.168.0.22                                                 Loss:   0.00% Avg:  0.54
-Hop    2 192.168.0.1                                                  Loss:   0.00% Avg:  1.19
-Hop    3 ...                                                          Loss:   0.00% Avg:  1.66
-Hop    4 ...                                                          Loss:   0.00% Avg:  5.61
-Hop    5 ...                                                          Loss:   0.00% Avg:  9.66
-Hop    6 ...                                                          Loss:   0.00% Avg:  9.53
-Hop    7 209.85.142.109                                               Loss:   0.00% Avg: 12.30
-Hop    8 172.253.66.139                                               Loss:   0.00% Avg:  9.81
-Hop    9 fra02s19-in-f14.1e100.net                                    Loss:   0.00% Avg:  9.61
-Waiting for MTR results to 2a00:1450:4001:82b::200e ...
-MTR    exit status 1:mtr: udp socket connect failed: Network is unreachable
-#-------------------------------------------------------------
-
-# run tcp trace to google.com (IPv4 only)
-tcping2 mtr -a https://google.com -t --dnsIPv4
-Waiting for MTR results to 142.250.185.206:443 ...
-Hop    1 192.168.0.22                                                 Loss:   0.00% Avg:  0.54
-Hop    2 192.168.0.1                                                  Loss:   0.00% Avg:  1.19
-Hop    3 ...                                                          Loss:   0.00% Avg:  1.66
-Hop    4 ...                                                          Loss:   0.00% Avg:  5.61
-Hop    5 ...                                                          Loss:   0.00% Avg:  9.66
-Hop    6 ???                                                          Loss: 100.00% Avg:  0.00ms
-Hop    7 192.178.71.154                                               Loss:   0.00% Avg:  9.85ms
-Hop    8 209.85.244.249                                               Loss:   0.00% Avg: 10.54ms
-Hop    9 142.250.225.77                                               Loss:   0.00% Avg:  9.75ms
-Hop   10 fra16s52-in-f14.1e100.net                                    Loss:   0.00% Avg:  9.83ms
-
-#-------------------------------------------------------------
-
-# start echo server
-# `QUIT\n` terminates the server
-tcping2 echo --server -p 8080 --timeout 10
-# or use docker container, which starts without parameter the echo server (or give the full command parameters)
-docker run -it --rm -p 8080:8080 tommi2day/tcping2
-#connect with  tcping as echo client
-tcping2 echo localhost 8080
-# server output
-listening on [::]:8080, terminate with CTRL-C
-got connection from 172.17.0.1:37806
-got  TCPING2 , client localhost tcping2 version 0.0.1-beta (d8f3af8 - 2024-04-28)
-got connection from 172.17.0.1:37806
-got quit, terminate server
-# client output
-connection to 127.0.0.1:8080 successful tested
-#-------------------------------------------------------------
-#Test with echo server and nc as client
-echo -e "Hello\nQUIT\n"|nc localhost 8080
-Hello
-# server
-docker run -it --rm -p 8080:8080 tommi2day/tcping2
-listening on [::]:8080, terminate with CTRL-C
-got connection from 172.17.0.1:41918
-got  Hello
-got connection from 172.17.0.1:41918
-IO Timeout
-#-------------------------------------------------------------
-# echo to standard server with timeout
-tcping2 echo www.google.com:80 --timeout 3
-Error: failed to read data, err:read tcp 127.0.0.1:65324->172.217.23.100:80: i/o timeout
 ```
+
+---
+
+## echo — Echo server and client
+
+```sh
+tcping2 echo [--address <host>] [--port <port>] [--server] [global flags]
+```
+
+TCP echo server or client. Useful for testing connectivity to ports not yet serving a protocol. The server terminates on a `QUIT\n` message or when `--server-timeout` expires.
+
+| Flag | Description |
+|------|-------------|
+| `-a, --address string` | IP/host to contact (client mode) |
+| `-p, --port string` | TCP port to contact/serve |
+| `-s, --server` | Run as echo server |
+| `-T, --server-timeout int` | Server timeout in seconds (default 60) |
+| `-t, --timeout int` | Client timeout in seconds (default 3) |
+
+**Examples:**
+
+```sh
+# Start echo server
+tcping2 echo --server -p 8080
+
+# Connect with echo client
+tcping2 echo localhost 8080
+connection to 127.0.0.1:8080 successful tested
+
+# Test with nc
+echo -e "Hello\nQUIT\n" | nc localhost 8080
+Hello
+
+# Docker: start echo server in background, then connect
+docker run -d --rm -p 8080:8080 docker-prod.hv.devk.de/dba-cloud/goproj/tcping2:1.1.2
+tcping2 echo localhost 8080
+
+# Docker: run a one-off TCP ping without local installation
+docker run -it --rm docker-prod.hv.devk.de/dba-cloud/goproj/tcping2:1.1.2 tcp google.com 80 --dnsIPv4
+
+# Echo to a standard server (expect timeout)
+tcping2 echo www.google.com:80 --timeout 3
+Error: failed to read data, err: read tcp 127.0.0.1:65324->172.217.23.100:80: i/o timeout
+```
+
+---
+
+## version — Print version information
+
+```sh
+tcping2 version
+```
+
+Prints the build version, commit hash, and build date.
+
+---
 
 ## Credits
 

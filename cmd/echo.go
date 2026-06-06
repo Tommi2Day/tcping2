@@ -141,7 +141,7 @@ func handleServerConnection(conn net.Conn, ch chan echoResult) {
 		if err != nil {
 			switch {
 			case err == io.EOF:
-				log.Debug("EOF")
+				log.Debugf("EOF")
 				fmt.Println("No Data from client")
 				ch <- echoResult{err: err, finish: false}
 				return

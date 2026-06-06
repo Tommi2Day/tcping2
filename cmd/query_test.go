@@ -17,9 +17,9 @@ func TestQueryInfo(t *testing.T) {
 	t.Run("CMD TCP", func(t *testing.T) {
 		args := []string{
 			"query",
-			"-a", "www.google.com",
-			"--unit-test",
-			"--debug",
+			flagAddress, "www.google.com",
+			flagUnitTest,
+			flagDebug,
 		}
 		out, err = common.CmdRun(RootCmd, args)
 		assert.NoErrorf(t, err, "Query command should not return an error:%s", err)

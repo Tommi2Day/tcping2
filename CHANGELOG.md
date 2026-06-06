@@ -1,5 +1,19 @@
 # tcping2
 
+## [1.2.0 - 2026-06-06]
+### Added
+- `tls` command: validate a TLS connection against the system trust store or a custom CA (PEM file, directory, Java JKS trust store, PKCS12/P12)
+- `tls show` subcommand: display certificate details (subject, issuer, SANs, validity dates, signature algorithm, serial) and optionally the full peer chain (`--chain`)
+- STARTTLS support for `tls` and `tls show`: `--starttls smtp|imap|pop3|ftp`
+- Local certificate file validation via `tls --certfile <path>` (PEM or DER)
+- Weak signature algorithm detection (MD2, MD5, SHA-1, DSA-SHA1) with a yellow `WARN` line on both commands
+### Changed
+- update dependencies
+- use Go1.26
+- update linter config
+- fix linter issues by using constants
+- update worflow
+
 ## [1.1.6 - 2025-12-26]
 - update dependencies
 - use Go1.25

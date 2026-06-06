@@ -26,12 +26,11 @@ func TestEchoClient(t *testing.T) {
 		unitTestFlag = true
 		args := []string{
 			"echo",
-			"-a", testURL,
+			flagAddress, testURL,
 			"-p", "",
 			"--server=false",
-			"--unit-test",
-			"--dnsIPv4",
-			"--debug",
+			flagUnitTest,
+			flagDebug,
 		}
 		out, err = common.CmdRun(RootCmd, args)
 		assert.NoErrorf(t, err, "Echo command should not return an error:%s", err)
@@ -69,12 +68,12 @@ func TestEchoClient(t *testing.T) {
 		unitTestFlag = true
 		args := []string{
 			"echo",
-			"-a", echoHost,
+			flagAddress, echoHost,
 			"-p", echoPort,
 			"--dnsIPv4=true",
 			"--server=false",
-			"--unit-test",
-			"--debug",
+			flagUnitTest,
+			flagDebug,
 		}
 
 		out, err = common.CmdRun(RootCmd, args)

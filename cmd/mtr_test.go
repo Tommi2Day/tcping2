@@ -113,11 +113,11 @@ func TestMTR(t *testing.T) {
 	t.Run("CMD MTR", func(t *testing.T) {
 		args := []string{
 			"mtr",
-			"-a", testURL,
+			flagAddress, testURL,
 			"-t",
 			"-m", mtr,
-			"--unit-test",
-			"--debug",
+			flagUnitTest,
+			flagDebug,
 		}
 		out, err = common.CmdRun(RootCmd, args)
 		assert.NoErrorf(t, err, "mtr command should not return an error:%s", err)

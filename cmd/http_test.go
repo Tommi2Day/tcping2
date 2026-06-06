@@ -15,9 +15,9 @@ func TestHTTPing(t *testing.T) {
 	t.Run("CMD HTTP", func(t *testing.T) {
 		args := []string{
 			"http",
-			"-a", testURL,
-			"--unit-test",
-			"--debug",
+			flagAddress, testURL,
+			flagUnitTest,
+			flagDebug,
 		}
 		out, err = common.CmdRun(RootCmd, args)
 		assert.NoErrorf(t, err, "HTTP command should not return an error:%s", err)

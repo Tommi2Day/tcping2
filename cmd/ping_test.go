@@ -15,10 +15,10 @@ func TestTCPPing(t *testing.T) {
 	t.Run("CMD TCP", func(t *testing.T) {
 		args := []string{
 			"tcp",
-			"-a", testURL,
+			flagAddress, testURL,
 			"-p", "",
-			"--unit-test",
-			"--debug",
+			flagUnitTest,
+			flagDebug,
 		}
 		out, err = common.CmdRun(RootCmd, args)
 		assert.NoErrorf(t, err, "TCP command should not return an error:%s", err)
@@ -39,9 +39,9 @@ func TestICMPPing(t *testing.T) {
 	t.Run("CMD ICMP", func(t *testing.T) {
 		args := []string{
 			"icmp",
-			"-a", testURL,
-			"--unit-test",
-			"--debug",
+			flagAddress, testURL,
+			flagUnitTest,
+			flagDebug,
 		}
 		out, err = common.CmdRun(RootCmd, args)
 		assert.NoErrorf(t, err, "ICMP command should not return an error:%s", err)
