@@ -44,10 +44,12 @@ snapshot:
 
 archives:
   - id: archive
-    formats: tar.gz
+    formats:
+      - tar.gz
     format_overrides:
       - goos: windows
-        formats: zip
+        formats:
+          - zip
     strip_binary_directory:  true
     files:
       - "*.md"
@@ -104,6 +106,6 @@ dockers:
       - "--label=org.opencontainers.image.version={{.Version}}"
       - "--build-arg=VERSION={{.Version}}"
       - "--build-arg=COMMIT={{.ShortCommit}}"
-      - "--build-arg=DATE={{time "2006-01-02"}}"
+      - '--build-arg=DATE={{time "2006-01-02"}}'
       - "--build-arg=GO_IMAGE={{.Env.GO_IMAGE}}"
       - "--build-arg=RUNTIME_IMAGE={{.Env.RUNTIME_IMAGE}}"
