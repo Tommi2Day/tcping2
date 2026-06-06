@@ -12,7 +12,8 @@
 - use Go1.26
 - update linter config
 - fix linter issues by using constants
-- update worflow
+- update workflow
+- increase test coverage
 
 ## [1.1.6 - 2025-12-26]
 - update dependencies

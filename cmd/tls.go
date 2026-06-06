@@ -22,6 +22,11 @@ import (
 const (
 	tlsCmdName  = "tls"
 	pemCertType = "CERTIFICATE"
+
+	protoSMTP = "smtp"
+	protoIMAP = "imap"
+	protoPOP3 = "pop3"
+	protoFTP  = "ftp"
 )
 
 const jksMagic uint32 = 0xFEEDFEED
@@ -195,34 +200,34 @@ func startTLS(addr, proto string, cfg *tls.Config, timeout time.Duration) (*tls.
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 
 	switch proto {
-	case "smtp":
+	case protoSMTP:
 		if err = smtpStartTLS(rw); err != nil {
 			_ = conn.Close()
 			return nil, err
 		}
-	case "imap":
+	case protoIMAP:
 		if err = imapStartTLS(rw); err != nil {
 			_ = conn.Close()
 			return nil, err
 		}
-	case "pop3":
+	case protoPOP3:
 		if err = pop3StartTLS(rw); err != nil {
 			_ = conn.Close()
 			return nil, err
 		}
-	case "ftp":
+	case protoFTP:
 		if err = ftpStartTLS(rw); err != nil {
 			_ = conn.Close()
 			return nil, err
 		}
 	default:
 		_ = conn.Close()
-		return nil, fmt.Errorf("unsupported STARTTLS protocol: %s (use smtp, imap, pop3, ftp)", proto)
+		return nil, fmt.Errorf("unsupported STARTTLS protocol: %s (use %s, %s, %s, %s)", proto, protoSMTP, protoIMAP, protoPOP3, protoFTP)
 	}
 
 	tlsConn := tls.Client(conn, cfg)
 	if err = tlsConn.Handshake(); err != nil {
-		_ = conn.Close()
+		_ = tlsConn.Close()
 		return nil, fmt.Errorf("TLS handshake failed: %w", err)
 	}
 	return tlsConn, nil

@@ -94,6 +94,14 @@ func resetCertfileFlag() {
 	}
 }
 
+// resetStartTLSFlag clears the starttls persistent flag state between tests.
+func resetStartTLSFlag() {
+	tlsStartTLS = ""
+	if f := tlsCmd.PersistentFlags().Lookup("starttls"); f != nil {
+		f.Changed = false
+	}
+}
+
 func TestTLSShow(t *testing.T) {
 	t.Run("show certificate details", func(t *testing.T) {
 		args := []string{
@@ -132,6 +140,7 @@ func TestTLSStartTLSSMTP(t *testing.T) {
 	if os.Getenv("SKIP_STARTTLS") != "" {
 		t.Skip("Skipping STARTTLS tests")
 	}
+	t.Cleanup(resetStartTLSFlag)
 	t.Run("SMTP STARTTLS", func(t *testing.T) {
 		args := []string{
 			tlsCmdName,
