@@ -21,11 +21,8 @@ jobs:
           go mod vendor
       - name: Test
         env:
-          # GitHub copies the files with api, not as clone, check fails
-          # https://github.com/actions/checkout/issues/335
-          SKIP_COMMIT: true
-          # github cannot handle custom resolvers, so skip dns tests
-          SKIP_DNS: true
+          SKIP_ICMP: true
+          # SKIP_ECHO_SERVER: "true"
         run: go test -v ./...  -coverprofile=coverage.txt -covermode=atomic
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
