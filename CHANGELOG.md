@@ -12,8 +12,12 @@
 - use Go1.26
 - update linter config
 - fix linter issues by using constants
-- update workflow
+- update workflow: consolidate Docker build and push into GoReleaser
+- add support for GitHub Container Registry (GHCR)
 - increase test coverage
+### Fixed
+- pass version, commit, and date to Docker build for correct version reporting in containers
+- fix ldflags package path in GoReleaser config
 
 ## [1.1.6 - 2025-12-26]
 - update dependencies

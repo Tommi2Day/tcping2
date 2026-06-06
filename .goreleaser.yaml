@@ -13,10 +13,10 @@ builds:
       - windows_amd64
     ldflags:
       - -s -w
-      - -X {{ .ProjectName }}/cmd.Version={{.Version}}
-      - -X {{ .ProjectName }}/cmd.Commit={{.ShortCommit}}
-      - -X {{ .ProjectName }}/cmd.Date={{time "2006-01-02"}}
-      - -X {{ .ProjectName }}/cmd.Name={{.ProjectName}}
+      - -X github.com/tommi2day/tcping2/cmd.Version={{.Version}}
+      - -X github.com/tommi2day/tcping2/cmd.Commit={{.ShortCommit}}
+      - -X github.com/tommi2day/tcping2/cmd.Date={{time "2006-01-02"}}
+      - -X github.com/tommi2day/tcping2/cmd.Name={{.ProjectName}}
 
 changelog:
   use: git
@@ -87,3 +87,23 @@ release:
   header: |
     ## TCPING2 Release {{ .Tag }} ({{ time "2006-01-02" }})
   target_commitish: '{{ .Commit }}'
+
+dockers:
+  - image_templates:
+      - "{{ .Env.DOCKER_USERNAME }}/tcping2:latest"
+      - "{{ .Env.DOCKER_USERNAME }}/tcping2:{{ .Version }}"
+      - "{{ .Env.DOCKER_USERNAME }}/tcping2:{{ .Tag }}"
+      - "ghcr.io/tommi2day/tcping2:latest"
+      - "ghcr.io/tommi2day/tcping2:{{ .Version }}"
+      - "ghcr.io/tommi2day/tcping2:{{ .Tag }}"
+    dockerfile: docker/image/Dockerfile
+    build_flag_templates:
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--build-arg=VERSION={{.Version}}"
+      - "--build-arg=COMMIT={{.ShortCommit}}"
+      - "--build-arg=DATE={{time "2006-01-02"}}"
+      - "--build-arg=GO_IMAGE={{.Env.GO_IMAGE}}"
+      - "--build-arg=RUNTIME_IMAGE={{.Env.RUNTIME_IMAGE}}"
