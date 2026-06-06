@@ -95,9 +95,6 @@ dockers:
       - "{{ .Env.DOCKER_USERNAME }}/tcping2:latest"
       - "{{ .Env.DOCKER_USERNAME }}/tcping2:{{ .Version }}"
       - "{{ .Env.DOCKER_USERNAME }}/tcping2:{{ .Tag }}"
-      - "ghcr.io/tommi2day/tcping2:latest"
-      - "ghcr.io/tommi2day/tcping2:{{ .Version }}"
-      - "ghcr.io/tommi2day/tcping2:{{ .Tag }}"
     dockerfile: docker/image/Dockerfile
     build_flag_templates:
       - "--label=org.opencontainers.image.created={{.Date}}"
