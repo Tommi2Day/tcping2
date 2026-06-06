@@ -20,8 +20,8 @@ jobs:
           go mod tidy
           go mod vendor
       - name: Test
-        env:
-          SKIP_ICMP: true
+        # env:
+          # SKIP_ICMP: true
           # SKIP_ECHO_SERVER: "true"
         run: go test -v ./...  -coverprofile=coverage.txt -covermode=atomic
       - name: Upload coverage reports to Codecov
