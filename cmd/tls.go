@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	tlsCmdName  = "tls"
-	pemCertType = "CERTIFICATE"
+	tlsCmdName             = "tls"
+	tlsValidateCertCmdName = "validate-cert"
+	pemCertType            = "CERTIFICATE"
 
 	protoSMTP = "smtp"
 	protoIMAP = "imap"
@@ -51,7 +52,14 @@ type TLSResult struct {
 }
 
 var tlsCmd = &cobra.Command{
-	Use:          tlsCmdName,
+	Use:   tlsCmdName,
+	Short: "TLS certificate and connection commands",
+	Long:  "Inspect, validate and probe TLS connections and certificates.",
+}
+
+var tlsValidateCertCmd = &cobra.Command{
+	Use:          tlsValidateCertCmdName,
+	Aliases:      []string{"validate"},
 	Short:        "Validate a TLS connection or local certificate",
 	Long:         "Connect to a server and validate its TLS certificate against the system trust store or a custom CA. Use --certfile to check a local certificate file instead.",
 	RunE:         runTLSValidate,
@@ -59,7 +67,8 @@ var tlsCmd = &cobra.Command{
 }
 
 var tlsShowCmd = &cobra.Command{
-	Use:          "show",
+	Use:          "show-cert",
+	Aliases:      []string{"show"},
 	Short:        "Show TLS certificate details and chain",
 	Long:         "Connect to a server and display the certificate's subject, issuer, SANs, validity dates and optionally the full chain.",
 	RunE:         runTLSShow,
@@ -69,14 +78,15 @@ var tlsShowCmd = &cobra.Command{
 func init() {
 	tlsCmd.PersistentFlags().StringVarP(&queryAddress, "address", "a", "", "host[:port] to connect to")
 	tlsCmd.PersistentFlags().StringVarP(&tlsPort, "port", "p", "443", "TCP port")
-	tlsCmd.PersistentFlags().StringVarP(&tlsRootCA, "rootca", "r", "", "root CA: PEM file, directory, Java trust store (.jks) or PKCS12 (.p12/.pfx)")
+	tlsCmd.PersistentFlags().StringVarP(&tlsRootCA, "rootca", "r", "", "root CA: PEM file, directory, Java trust store (.jks), PKCS12 (.p12/.pfx) or Oracle Wallet (.sso)")
 	tlsCmd.PersistentFlags().StringVar(&tlsStartTLS, "starttls", "", "upgrade via STARTTLS: smtp, imap, pop3, ftp")
 	tlsCmd.PersistentFlags().IntVarP(&tlsTimeout, "timeout", "t", 5, "connection timeout in seconds")
 
-	tlsCmd.Flags().StringVarP(&tlsCertFile, "certfile", "f", "", "validate a local certificate file instead of connecting")
+	tlsValidateCertCmd.Flags().StringVarP(&tlsCertFile, "certfile", "f", "", "validate a local certificate file instead of connecting")
 
 	tlsShowCmd.Flags().BoolVar(&tlsShowChain, "chain", false, "show full certificate chain")
 
+	tlsCmd.AddCommand(tlsValidateCertCmd)
 	tlsCmd.AddCommand(tlsShowCmd)
 	RootCmd.AddCommand(tlsCmd)
 }
@@ -332,6 +342,8 @@ func buildCertPool(rootCA string) (*x509.CertPool, error) {
 		return pool, addJKSTrustStore(pool, rootCA)
 	case ".p12", ".pfx":
 		return pool, addPKCS12TrustStore(pool, rootCA)
+	case ".sso":
+		return pool, addOracleSSO(pool, rootCA)
 	default:
 		return pool, addPEMFile(pool, rootCA)
 	}
@@ -349,7 +361,9 @@ func addPEMFile(pool *x509.CertPool, path string) error {
 	return nil
 }
 
-// addCertsFromDir appends certificates from all .pem/.crt files in a directory.
+// addCertsFromDir appends certificates from recognised files in a directory.
+// PEM/CRT/CER files, PKCS12 (.p12/.pfx) and Oracle Wallet (.sso) are all handled;
+// other extensions are silently ignored.
 func addCertsFromDir(pool *x509.CertPool, dir string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -359,18 +373,92 @@ func addCertsFromDir(pool *x509.CertPool, dir string) error {
 		if e.IsDir() {
 			continue
 		}
-		ext := strings.ToLower(filepath.Ext(e.Name()))
-		if ext == ".pem" || ext == ".crt" || ext == ".cer" {
-			path := filepath.Join(dir, e.Name())
+		path := filepath.Join(dir, e.Name())
+		switch strings.ToLower(filepath.Ext(e.Name())) {
+		case ".pem", ".crt", ".cer":
 			data, err := os.ReadFile(path)
 			if err != nil {
 				log.Debugf("skipping %s: %v", path, err)
 				continue
 			}
 			pool.AppendCertsFromPEM(data)
+		case ".p12", ".pfx":
+			if err := addPKCS12TrustStore(pool, path); err != nil {
+				log.Debugf("skipping %s: %v", path, err)
+			}
+		case ".sso":
+			if err := addOracleSSO(pool, path); err != nil {
+				log.Debugf("skipping %s: %v", path, err)
+			}
 		}
 	}
 	return nil
+}
+
+// addOracleSSO loads trusted certificates from an Oracle auto-login wallet (.sso).
+// The format is proprietary, so certificates are extracted by scanning the binary
+// for embedded DER-encoded X.509 structures.
+func addOracleSSO(pool *x509.CertPool, path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	added := scanAndAddDERCerts(pool, data)
+	if added == 0 {
+		return fmt.Errorf("no certificates found in Oracle SSO wallet %s", path)
+	}
+	log.Debugf("Oracle SSO: loaded %d trusted certificate(s) from %s", added, path)
+	return nil
+}
+
+// scanAndAddDERCerts scans a byte slice for DER-encoded X.509 certificates and adds each
+// successfully parsed certificate to pool. Returns the number of certificates added.
+func scanAndAddDERCerts(pool *x509.CertPool, data []byte) int {
+	added := 0
+	for i := 0; i < len(data); {
+		if data[i] != 0x30 {
+			i++
+			continue
+		}
+		contentLen, hdrLen := parseDERLength(data[i:])
+		if contentLen <= 0 || hdrLen <= 0 || i+hdrLen+contentLen > len(data) {
+			i++
+			continue
+		}
+		cert, err := x509.ParseCertificate(data[i : i+hdrLen+contentLen])
+		if err == nil {
+			pool.AddCert(cert)
+			added++
+			i += hdrLen + contentLen
+		} else {
+			i++
+		}
+	}
+	return added
+}
+
+// parseDERLength reads a DER tag+length prefix from data[0] (the tag byte) and returns
+// (contentLen, totalHeaderLen). Returns (0, 0) on truncation or unsupported encoding.
+func parseDERLength(data []byte) (contentLen, hdrLen int) {
+	if len(data) < 2 {
+		return 0, 0
+	}
+	b := data[1]
+	if b < 0x80 {
+		return int(b), 2
+	}
+	numBytes := int(b & 0x7f)
+	if numBytes == 0 || numBytes > 4 || 2+numBytes > len(data) {
+		return 0, 0
+	}
+	length := 0
+	for _, nb := range data[2 : 2+numBytes] {
+		length = (length << 8) | int(nb)
+	}
+	if length > 1<<20 { // sanity cap: no real certificate exceeds 1 MiB
+		return 0, 0
+	}
+	return length, 2 + numBytes
 }
 
 // jksReadTrustedCert parses one trusted-certificate entry from JKS binary data at off.

@@ -22,16 +22,27 @@ const (
 	flagStartTLS = "--starttls"
 	flagCertFile = "-f"
 	flagChain    = "--chain"
-	tlsTestHost  = "www.google.com"
-	tlsTestPort  = "443"
-	tlsSMTPHost  = "smtp.gmail.com"
-	tlsSMTPPort  = "587"
 )
 
-func TestTLSValidate(t *testing.T) {
+var (
+	tlsSMTPHost = "smtp.gmail.com"
+	tlsSMTPPort = "587"
+	tlsTestHost = "www.google.com"
+	tlsTestPort = "443"
+)
+
+func TestTLS(t *testing.T) {
+	if os.Getenv("SKIP_TLS") != "" {
+		t.Skip("Skipping TLS tests")
+	}
+	tlsTestHost = common.GetEnv("TLS_TEST_HOST", tlsTestHost)
+	tlsTestPort = common.GetEnv("TLS_TEST_PORT", tlsTestPort)
+	tlsSMTPHost = common.GetEnv("STARTTLS_SMTP_HOST", tlsSMTPHost)
+	tlsSMTPPort = common.GetEnv("STARTTLS_SMTP_PORT", tlsSMTPPort)
+
 	t.Run("validate TLS connection", func(t *testing.T) {
 		args := []string{
-			tlsCmdName,
+			tlsCmdName, tlsValidateCertCmdName,
 			flagAddress, tlsTestHost,
 			flagPort, tlsTestPort,
 			flagUnitTest,
@@ -42,18 +53,16 @@ func TestTLSValidate(t *testing.T) {
 		assert.Contains(t, out, "TLS VALID", "tls command should show TLS VALID")
 		t.Log(out)
 	})
-}
-
-func TestTLSValidateCertFile(t *testing.T) {
-	certFile := writeTempCert(t, time.Now().Add(-24*time.Hour), time.Now().Add(90*24*time.Hour))
-	t.Cleanup(func() {
-		_ = os.Remove(certFile)
-		resetCertfileFlag()
-	})
 
 	t.Run("validate valid cert file", func(t *testing.T) {
+		certFile := writeTempCert(t, time.Now().Add(-24*time.Hour), time.Now().Add(90*24*time.Hour))
+		t.Cleanup(func() {
+			_ = os.Remove(certFile)
+			resetCertfileFlag()
+		})
+
 		args := []string{
-			tlsCmdName,
+			tlsCmdName, tlsValidateCertCmdName,
 			flagCertFile, certFile,
 			flagUnitTest,
 			flagDebug,
@@ -63,18 +72,16 @@ func TestTLSValidateCertFile(t *testing.T) {
 		assert.Contains(t, out, "TLS VALID", "certfile check should show TLS VALID")
 		t.Log(out)
 	})
-}
-
-func TestTLSValidateExpiredCertFile(t *testing.T) {
-	certFile := writeTempCert(t, time.Now().Add(-48*time.Hour), time.Now().Add(-24*time.Hour))
-	t.Cleanup(func() {
-		_ = os.Remove(certFile)
-		resetCertfileFlag()
-	})
 
 	t.Run("validate expired cert file", func(t *testing.T) {
+		certFile := writeTempCert(t, time.Now().Add(-48*time.Hour), time.Now().Add(-24*time.Hour))
+		t.Cleanup(func() {
+			_ = os.Remove(certFile)
+			resetCertfileFlag()
+		})
+
 		args := []string{
-			tlsCmdName,
+			tlsCmdName, tlsValidateCertCmdName,
 			flagCertFile, certFile,
 			flagUnitTest,
 			flagDebug,
@@ -84,28 +91,10 @@ func TestTLSValidateExpiredCertFile(t *testing.T) {
 		assert.Contains(t, out, "TLS INVALID", "expired certfile check should show TLS INVALID")
 		t.Log(out)
 	})
-}
 
-// resetCertfileFlag clears the certfile flag state so subsequent tests are not affected.
-func resetCertfileFlag() {
-	tlsCertFile = ""
-	if f := tlsCmd.Flags().Lookup("certfile"); f != nil {
-		f.Changed = false
-	}
-}
-
-// resetStartTLSFlag clears the starttls persistent flag state between tests.
-func resetStartTLSFlag() {
-	tlsStartTLS = ""
-	if f := tlsCmd.PersistentFlags().Lookup("starttls"); f != nil {
-		f.Changed = false
-	}
-}
-
-func TestTLSShow(t *testing.T) {
-	t.Run("show certificate details", func(t *testing.T) {
+	t.Run("show host certificate details", func(t *testing.T) {
 		args := []string{
-			tlsCmdName, "show",
+			tlsCmdName, "show-cert",
 			flagAddress, tlsTestHost,
 			flagPort, tlsTestPort,
 			flagUnitTest,
@@ -117,12 +106,10 @@ func TestTLSShow(t *testing.T) {
 		assert.Contains(t, out, "Not After:", "tls show should log Not After")
 		t.Log(out)
 	})
-}
 
-func TestTLSShowChain(t *testing.T) {
 	t.Run("show certificate chain", func(t *testing.T) {
 		args := []string{
-			tlsCmdName, "show",
+			tlsCmdName, "show-cert",
 			flagAddress, tlsTestHost,
 			flagPort, tlsTestPort,
 			flagChain,
@@ -134,16 +121,17 @@ func TestTLSShowChain(t *testing.T) {
 		assert.Contains(t, out, "TLS CERT", "tls show chain should log TLS CERT")
 		t.Log(out)
 	})
-}
 
-func TestTLSStartTLSSMTP(t *testing.T) {
-	if os.Getenv("SKIP_STARTTLS") != "" {
-		t.Skip("Skipping STARTTLS tests")
-	}
-	t.Cleanup(resetStartTLSFlag)
 	t.Run("SMTP STARTTLS", func(t *testing.T) {
+		if os.Getenv("SKIP_STARTTLS") != "" {
+			t.Skip("Skipping STARTTLS tests")
+		}
+
+		t.Logf("Testing STARTTLS against %s:%s", tlsSMTPHost, tlsSMTPPort)
+		t.Cleanup(resetStartTLSFlag)
+
 		args := []string{
-			tlsCmdName,
+			tlsCmdName, tlsValidateCertCmdName,
 			flagAddress, tlsSMTPHost,
 			flagPort, tlsSMTPPort,
 			flagStartTLS, "smtp",
@@ -155,18 +143,15 @@ func TestTLSStartTLSSMTP(t *testing.T) {
 		assert.Contains(t, out, "TLS VALID", "SMTP STARTTLS should show TLS VALID")
 		t.Log(out)
 	})
-}
-
-func TestTLSWeakHashCertFile(t *testing.T) {
-	certFile := writeTempCertSHA1(t, time.Now().Add(-24*time.Hour), time.Now().Add(90*24*time.Hour))
-	t.Cleanup(func() {
-		_ = os.Remove(certFile)
-		resetCertfileFlag()
-	})
 
 	t.Run("detect weak SHA-1 signature", func(t *testing.T) {
+		certFile := writeTempCertSHA1(t, time.Now().Add(-24*time.Hour), time.Now().Add(90*24*time.Hour))
+		t.Cleanup(func() {
+			_ = os.Remove(certFile)
+			resetCertfileFlag()
+		})
 		args := []string{
-			tlsCmdName,
+			tlsCmdName, tlsValidateCertCmdName,
 			flagCertFile, certFile,
 			flagUnitTest,
 			flagDebug,
@@ -177,6 +162,22 @@ func TestTLSWeakHashCertFile(t *testing.T) {
 		assert.Contains(t, out, "TLS WEAK", "SHA-1 cert should trigger WEAK warning")
 		t.Log(out)
 	})
+}
+
+// resetCertfileFlag clears the certfile flag state so subsequent tests are not affected.
+func resetCertfileFlag() {
+	tlsCertFile = ""
+	if f := tlsValidateCertCmd.Flags().Lookup("certfile"); f != nil {
+		f.Changed = false
+	}
+}
+
+// resetStartTLSFlag clears the starttls persistent flag state between tests.
+func resetStartTLSFlag() {
+	tlsStartTLS = ""
+	if f := tlsCmd.PersistentFlags().Lookup("starttls"); f != nil {
+		f.Changed = false
+	}
 }
 
 // writeTempCert creates a self-signed PEM certificate file for testing (ECDSA/SHA-256).

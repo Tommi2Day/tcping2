@@ -303,7 +303,7 @@ func TestLeafCertNoPeerCerts(t *testing.T) {
 func TestTLSStartTLSInvalidProtocol(t *testing.T) {
 	t.Cleanup(resetStartTLSFlag)
 	args := []string{
-		tlsCmdName,
+		tlsCmdName, tlsValidateCertCmdName,
 		flagAddress, tlsTestHost,
 		flagPort, tlsTestPort,
 		flagStartTLS, "ldap",
