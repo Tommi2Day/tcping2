@@ -1,5 +1,16 @@
 # tcping2
 
+## [1.3.0 - 2026-06-08]
+### Added
+- `tls info` subcommand: show negotiated TLS version, cipher suite, ALPN protocol, OCSP stapling and SCT status
+- `tls info --probe`: discover all TLS versions and TLS 1.2 cipher suites accepted by the server
+- Oracle Wallet (`.sso`) support in `--rootca` and certificate directory scanning: trusted certificates are extracted by DER-scanning the proprietary binary format
+### Changed
+- `tls` default action is now the explicit subcommand `tls validate-cert` (alias: `validate`)
+- `tls show` renamed to `tls show-cert` (`show` kept as alias)
+- ICMP ping test now skips automatically when the process lacks raw-socket permission instead of failing
+
+
 ## [1.2.0 - 2026-06-06]
 ### Added
 - `tls` command: validate a TLS connection against the system trust store or a custom CA (PEM file, directory, Java JKS trust store, PKCS12/P12)

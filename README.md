@@ -14,7 +14,14 @@ Tcping2 is an ip probe command line tool, supporting ICMP, TCP and HTTP protocol
 - Support ICMP/TCP protocols
 - Support resolving hostnames to IPv4/IPv6 addresses or IPv4 Only
 - HTTPTrace
-- TLS connection validation and certificate inspection (STARTTLS, custom trust stores, weak algorithm detection)
+- TLS certificate and connection commands (`validate-cert`, `show-cert`, `info`):
+  - Validate a TLS connection or a local certificate file (PEM/DER)
+  - Display full certificate details and chain
+  - Show negotiated connection parameters: TLS version, cipher suite, ALPN, OCSP stapling, SCT
+  - Probe a server for all supported TLS versions and TLS 1.2 cipher suites (`--probe`)
+  - STARTTLS support: `smtp`, `imap`, `pop3`, `ftp`
+  - Weak algorithm detection (SHA-1, TLS 1.0/1.1 flagged in yellow)
+  - Custom trust stores: PEM file, directory, JKS, PKCS12, Oracle Wallet (`.sso`)
 - Traceroute based on a system installed mtr (not available on Windows)
 - Query basic IP information from [https://ifconfig.is](https://ifconfig.is).
 - Echo Server and Client
@@ -27,7 +34,10 @@ Tcping2 is an ip probe command line tool, supporting ICMP, TCP and HTTP protocol
 - [icmp — Ping using ICMP protocol](#icmp--ping-using-icmp-protocol)
 - [tcp — Ping using TCP protocol](#tcp--ping-using-tcp-protocol)
 - [http — HTTP trace](#http--http-trace)
-- [tls — Validate TLS connection or certificate](#tls--validate-tls-connection-or-certificate)
+- [tls — TLS certificate and connection commands](#tls--tls-certificate-and-connection-commands)
+  - [validate-cert — Validate a TLS connection or certificate](#validate-cert--validate-a-tls-connection-or-certificate)
+  - [show-cert — Show certificate details and chain](#show-cert--show-certificate-details-and-chain)
+  - [info — Show TLS connection parameters](#info--show-tls-connection-parameters)
 - [mtr — Traceroute using MTR](#mtr--traceroute-using-mtr)
 - [query — Query host IP information](#query--query-host-ip-information)
 - [echo — Echo server and client](#echo--echo-server-and-client)
@@ -160,88 +170,104 @@ Total     :    116.56 ms
 
 ---
 
-## tls — Validate TLS connection or certificate
-
-### Validate a connection
+## tls — TLS certificate and connection commands
 
 ```sh
-tcping2 tls [--address <host>] [--port <port>] [--rootca <path>] [--starttls <proto>] [global flags]
+tcping2 tls <subcommand> [flags] [global flags]
 ```
 
-Connects to the server and validates the TLS certificate chain. Uses the system trust store by default. On success it shows the expiry date; on failure it prints the exact reason.
+The `tls` command groups certificate and connection inspection subcommands. All subcommands share these persistent flags:
 
 | Flag | Description |
 |------|-------------|
 | `-a, --address string` | Host (or `host:port`) to connect to |
-| `-p, --port int` | TCP port (default `443`) |
-| `-r, --rootca string` | Additional trust source: PEM file, directory of PEM/CRT files, Java JKS trust store (`.jks`), or PKCS12 bundle (`.p12`/`.pfx`) |
+| `-p, --port string` | TCP port (default `443`) |
+| `-r, --rootca string` | Additional trust source: PEM file, directory, JKS (`.jks`), PKCS12 (`.p12`/`.pfx`), or Oracle Wallet (`.sso`) |
 | `--starttls string` | Upgrade via STARTTLS before TLS handshake: `smtp`, `imap`, `pop3`, `ftp` |
-| `-f, --certfile string` | Validate a local certificate file (PEM or DER) instead of connecting |
 | `-t, --timeout int` | Connection timeout in seconds (default `5`) |
+
+When a **directory** is given as `--rootca`, all `.pem`, `.crt`, `.cer`, `.p12`/`.pfx`, and `.sso` files in it are loaded automatically — so pointing at an Oracle Wallet directory (containing `cwallet.sso` and/or `ewallet.p12`) works without any extra flags.
+
+---
+
+### validate-cert — Validate a TLS connection or certificate
+
+Alias: `validate`
+
+```sh
+tcping2 tls validate-cert [--address <host>] [--certfile <path>] [flags]
+```
+
+Connects to the server and validates the TLS certificate chain against the system trust store (or a custom CA via `--rootca`). On success it shows the expiry date; on failure it prints the exact reason. Use `--certfile` to check a local PEM or DER certificate file instead.
+
+| Flag | Description |
+|------|-------------|
+| `-f, --certfile string` | Validate a local certificate file (PEM or DER) instead of connecting |
 
 **Examples:**
 
 ```sh
 # Validate a public HTTPS server
-tcping2 tls -a example.com
+tcping2 tls validate-cert -a example.com
 TLS    VALID     example.com:443  (expires 2026-10-01, 117 days)
 
 # Invalid / expired certificate
-tcping2 tls -a expired.badssl.com
+tcping2 tls validate-cert -a expired.badssl.com
 TLS    INVALID   expired.badssl.com:443
       REASON    x509: certificate has expired or is not yet valid: ...
 
 # SMTP with STARTTLS
-tcping2 tls -a smtp.gmail.com -p 587 --starttls smtp
+tcping2 tls validate-cert -a smtp.gmail.com -p 587 --starttls smtp
 TLS    VALID     smtp.gmail.com:587  (expires 2026-08-10, 65 days)
 
-# IMAP with STARTTLS
-tcping2 tls -a imap.gmail.com -p 143 --starttls imap
-TLS    VALID     imap.gmail.com:143  (expires 2026-08-10, 65 days)
+# Custom CA — PEM file
+tcping2 tls validate-cert -a internal.host -r /etc/ssl/company-ca.pem
 
-# Custom CA (PEM file)
-tcping2 tls -a internal.host -r /etc/ssl/company-ca.pem
+# Custom CA — directory of certificate files
+tcping2 tls validate-cert -a internal.host -r /etc/ssl/company-certs/
 
-# Custom CA (directory of PEM/CRT files)
-tcping2 tls -a internal.host -r /etc/ssl/company-certs/
+# Custom CA — Java JKS trust store
+tcping2 tls validate-cert -a internal.host -r /opt/jdk/lib/security/cacerts.jks
 
-# Java JKS trust store
-tcping2 tls -a internal.host -r /opt/jdk/lib/security/cacerts.jks
+# Custom CA — PKCS12 bundle
+tcping2 tls validate-cert -a internal.host -r bundle.p12
 
-# PKCS12 trust store
-tcping2 tls -a internal.host -r bundle.p12
+# Custom CA — Oracle Wallet file
+tcping2 tls validate-cert -a db.internal -r /oracle/wallet/cwallet.sso
+
+# Custom CA — Oracle Wallet directory (cwallet.sso and ewallet.p12 are loaded automatically)
+tcping2 tls validate-cert -a db.internal -r /oracle/wallet/
 
 # Local certificate file — checks validity and expiry
-tcping2 tls -f /path/to/server.pem
+tcping2 tls validate-cert -f /path/to/server.pem
 TLS    VALID     /path/to/server.pem  (expires 2026-10-01, 117 days)
 
 # Weak signature algorithm warning (SHA-1)
-tcping2 tls -f /path/to/old-cert.pem
+tcping2 tls validate-cert -f /path/to/old-cert.pem
 TLS    VALID     /path/to/old-cert.pem  (expires 2026-10-01, 117 days)
        WARN      /path/to/old-cert.pem uses a weak signature algorithm (SHA1-RSA)
 ```
 
-### Show certificate details
+---
+
+### show-cert — Show certificate details and chain
+
+Alias: `show`
 
 ```sh
-tcping2 tls show [--address <host>] [--port <port>] [--chain] [--starttls <proto>] [global flags]
+tcping2 tls show-cert [--address <host>] [--chain] [flags]
 ```
 
 Connects and prints the leaf certificate's subject, issuer, signature algorithm, SANs, and validity window. Use `--chain` to display every certificate in the peer chain.
 
 | Flag | Description |
 |------|-------------|
-| `-a, --address string` | Host (or `host:port`) to connect to |
-| `-p, --port int` | TCP port (default `443`) |
-| `-r, --rootca string` | Additional trust source (same as `tls`) |
-| `--starttls string` | STARTTLS protocol (same as `tls`) |
 | `--chain` | Show the full certificate chain |
-| `-t, --timeout int` | Connection timeout in seconds (default `5`) |
 
 **Examples:**
 
 ```sh
-tcping2 tls show -a www.google.com
+tcping2 tls show-cert -a www.google.com
 TLS    CERT      www.google.com:443
   Subject:       CN=www.google.com
   Issuer:        CN=WE2,O=Google Trust Services,C=US
@@ -251,7 +277,7 @@ TLS    CERT      www.google.com:443
   SANs:          www.google.com
   Serial:        f666bd12cd02a3cb / SN 327523536107629...
 
-tcping2 tls show -a www.google.com --chain
+tcping2 tls show-cert -a www.google.com --chain
 TLS    CERT      www.google.com:443
   Subject:       CN=www.google.com
   ...
@@ -265,12 +291,77 @@ TLS    CERT      www.google.com:443
     Signature:     SHA256-RSA
     ...
 
-# SHA-1 certificate flagged in show output
-tcping2 tls show -a legacy.example.com
+# SHA-1 certificate flagged
+tcping2 tls show-cert -a legacy.example.com
 TLS    CERT      legacy.example.com:443
   Subject:       CN=legacy.example.com
   Signature:     SHA1-RSA  [WEAK]
   ...
+```
+
+---
+
+### info — Show TLS connection parameters
+
+```sh
+tcping2 tls info [--address <host>] [--probe] [flags]
+```
+
+Connects and reports the negotiated TLS parameters: protocol version, cipher suite, ALPN protocol, leaf certificate signature, and whether OCSP stapling or Signed Certificate Timestamps (SCT) are present. Weak TLS versions (1.0, 1.1) and weak certificate signature algorithms (SHA-1) are highlighted in yellow.
+
+Use `--probe` to make additional connections and discover all TLS versions and TLS 1.2 cipher suites the server accepts.
+
+| Flag | Description |
+|------|-------------|
+| `--probe` | Probe for all supported TLS versions and TLS 1.2 cipher suites |
+
+**Examples:**
+
+```sh
+tcping2 tls info -a www.google.com
+TLS    INFO      www.google.com:443
+  Version:         TLS 1.3
+  Cipher suite:    TLS_AES_256_GCM_SHA384
+  ALPN:            h2
+  Cert subject:    www.google.com
+  Cert signature:  ECDSA-SHA256
+  OCSP stapling:   yes
+  SCT (CT logs):   yes
+
+# With --probe: discover supported versions and TLS 1.2 cipher suites
+tcping2 tls info -a www.google.com --probe
+TLS    INFO      www.google.com:443
+  Version:         TLS 1.3
+  Cipher suite:    TLS_AES_256_GCM_SHA384
+  ALPN:            h2
+  Cert subject:    www.google.com
+  Cert signature:  ECDSA-SHA256
+  OCSP stapling:   yes
+  SCT (CT logs):   yes
+  TLS versions:    TLS 1.3 TLS 1.2
+  Cipher suites:   (TLS 1.2, * = negotiated)
+    TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+    TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+    TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+    TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+    TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+    TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+
+# Weak TLS version shown in yellow
+tcping2 tls info -a legacy.internal --probe
+TLS    INFO      legacy.internal:443
+  Version:         TLS 1.2
+  Cipher suite:    TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+  OCSP stapling:   no
+  TLS versions:    TLS 1.2 TLS 1.1 TLS 1.0
+  ...
+
+# Oracle DB listener with wallet trust store
+tcping2 tls info -a db.internal -p 2484 -r /oracle/wallet/
+TLS    INFO      db.internal:2484
+  Version:         TLS 1.2
+  Cipher suite:    TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+  OCSP stapling:   no
 ```
 
 ---
