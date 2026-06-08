@@ -14,8 +14,6 @@ permissions:
 env:
   IMAGE: tcping2
   TAG: ${{ github.event.inputs.tag }}
-  GO_IMAGE: golang:1.26-bookworm
-  RUNTIME_IMAGE: debian:bookworm
 
 jobs:
   goreleaser:
@@ -48,5 +46,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_TOKEN }}
           DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
-          GO_IMAGE: ${{ env.GO_IMAGE }}
-          RUNTIME_IMAGE: ${{ env.RUNTIME_IMAGE }}
+          # GO_IMAGE: ${{ env.GO_IMAGE }}
+          # RUNTIME_IMAGE: ${{ env.RUNTIME_IMAGE }}
