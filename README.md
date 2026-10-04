@@ -1,6 +1,5 @@
 # tcping2
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/tommi2day/tcping2)](https://goreportcard.com/report/github.com/tommi2day/tcping2)
 ![CI](https://github.com/tommi2day/tcping2/actions/workflows/main.yml/badge.svg)
 [![codecov](https://codecov.io/gh/Tommi2Day/tcping2/branch/main/graph/badge.svg?token=C1IP9AMBUM)](https://codecov.io/gh/Tommi2Day/tcping2)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/tommi2day/tcping2)
@@ -86,6 +85,8 @@ tcping2 icmp [--address <host>] [global flags]
 
 > **Note:** Root permission is required (raw socket). Use `sudo` or set the setuid bit on the binary.
 
+The command exits with a nonzero status if any resolved target does not reply.
+
 | Flag | Description |
 |------|-------------|
 | `-a, --address string` | IP/host to ping |
@@ -114,6 +115,8 @@ tcping2 tcp [--address <host>] [--port <port>] [global flags]
 ```
 
 The address and port can be given as positional arguments, as `host:port` in `--address`, or as separate flags.
+
+The command exits with a nonzero status if any resolved target is not open.
 
 | Flag | Description |
 |------|-------------|

@@ -1,5 +1,11 @@
 # tcping2
 
+## [1.3.1 - 2026-10-04]
+## Changed
+- update dependencies
+### Fixed
+- `icmp` and `tcp` now return an error if any resolved target does not reply or is not open
+
 ## [1.3.0 - 2026-06-08]
 ### Added
 - `tls info` subcommand: show negotiated TLS version, cipher suite, ALPN protocol, OCSP stapling and SCT status
