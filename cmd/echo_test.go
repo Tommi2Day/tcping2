@@ -27,7 +27,7 @@ func TestEchoClient(t *testing.T) {
 		args := []string{
 			"echo",
 			flagAddress, testURL,
-			"-p", "",
+			flagPort, "",
 			"--server=false",
 			flagUnitTest,
 			flagDebug,
@@ -69,7 +69,7 @@ func TestEchoClient(t *testing.T) {
 		args := []string{
 			"echo",
 			flagAddress, echoHost,
-			"-p", echoPort,
+			flagPort, echoPort,
 			"--dnsIPv4=true",
 			"--server=false",
 			flagUnitTest,

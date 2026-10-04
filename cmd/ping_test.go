@@ -16,7 +16,7 @@ func TestTCPPing(t *testing.T) {
 		args := []string{
 			"tcp",
 			flagAddress, testURL,
-			"-p", "",
+			flagPort, "",
 			flagUnitTest,
 			flagDebug,
 		}
@@ -50,7 +50,7 @@ func TestTCPPingReturnsErrorForClosedPort(t *testing.T) {
 	args := []string{
 		"tcp",
 		flagAddress, host,
-		"-p", port,
+		flagPort, port,
 		flagUnitTest,
 		flagDebug,
 	}
