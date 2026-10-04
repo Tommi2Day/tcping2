@@ -112,12 +112,16 @@ func runICMPPing(_ *cobra.Command, args []string) error {
 		return err
 	}
 	i := new(ICMPing)
+	var pingErr error
 	for _, ip := range ips {
 		err = i.Run(ip.String())
 		i.Log(err)
+		if err != nil && pingErr == nil {
+			pingErr = fmt.Errorf("icmp ping was not ok for %s: %w", ip.String(), err)
+		}
 	}
 	log.Debugf("ICMPing done")
-	return nil
+	return pingErr
 }
 
 func runTCPPing(_ *cobra.Command, args []string) error {
@@ -139,13 +143,17 @@ func runTCPPing(_ *cobra.Command, args []string) error {
 
 	// iterate over returned IPs
 	t := new(TCPing)
+	var pingErr error
 	for _, ip := range ips {
 		dst := net.JoinHostPort(ip.String(), queryPort)
 		_ = t.Run(dst)
 		t.Log()
+		if t.Code != 0 && pingErr == nil {
+			pingErr = fmt.Errorf("tcp ping was not ok for %s: %s", dst, t.Msg)
+		}
 	}
 	log.Debugf("TCPing done")
-	return nil
+	return pingErr
 }
 
 func normalizeAddress() (ips []net.IP, err error) {
